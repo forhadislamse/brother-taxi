@@ -1,0 +1,206 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mongodb"
+  url      = env("DATABASE_URL")
+}
+
+enum UserRole {
+  ADMIN
+  RIDER
+  DRIVER
+}
+
+enum UserStatus {
+  ACTIVE
+  INACTIVE
+  BLOCKED
+}
+
+enum RideStatus {
+  REQUESTED
+  ACCEPTED
+  IN_PROGRESS
+  COMPLETED
+  CANCELLED
+}
+
+
+model User {
+  // ───── Identity
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
+  fullName     String? @default("")
+  dob          String? @default("") // Date of Birth
+  gender       String? @default("")
+  nidNumber    String? @default("") // National ID / SSN
+  referralCode String? // For referral program
+  documents    Json? // Store extra driver/rider documents
+
+  // ───── Contact Info
+  phoneNumber String  @unique
+  email       String? @unique
+  city        String? // City for drivers
+  location    String? @default("") // Current address text
+  lat         Float?  @default(0) // Current latitude
+  lng         Float?  @default(0) // Current longitude
+
+  // ───── Authentication & Security
+  password               String
+  role                   UserRole   @default(RIDER)
+  status                 UserStatus @default(ACTIVE)
+  otp                    Int?
+  otpExpiresAt           DateTime?  @default(now())
+  phoneVerificationToken String?    @default("")
+  isPhoneNumberVerify    Boolean    @default(false)
+
+  // ───── Profile & Preferences
+  profileImage     String?
+  fcmToken         String? @default("")
+  isNotificationOn Boolean @default(false)
+  isUserOnline     Boolean @default(true)
+  onBoarding       Boolean @default(false)
+
+  // ───── Driver Specific
+  licensePlate     String? // Car license plate
+  drivingLicense   String? // Driving license number or file
+  licenseFrontSide String? @default("")
+  licenseBackSide  String? @default("")
+  taxiManufacturer String? // Car brand (e.g. Toyota, Honda)
+  bhNumber         String? // Driver badge number
+
+  // ───── Stats & Metrics
+  rating        Float? @default(0)
+  totalDistance Float? @default(0) // In kilometers
+  totalRides    Int?   @default(0) // Rider trips count
+  totalTrips    Int?   @default(0) // Driver trips count
+
+  // ───── Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ───── Relationships
+  ridesAsRider    Ride[]   @relation("RiderRides")
+  ridesAsDriver   Ride[]   @relation("DriverRides")
+  reviewsGiven    Review[] @relation("ReviewsGiven")
+  reviewsReceived Review[] @relation("ReviewsReceived")
+  wallet          Wallet?
+  vehicles        Vehicle[]
+
+  @@map("users")
+}
+
+model Wallet {
+  id      String @id @default(auto()) @map("_id") @db.ObjectId
+  balance Float  @default(0)
+  userId  String @unique @db.ObjectId
+  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("wallets")
+}
+
+model Ride {
+  id              String     @id @default(auto()) @map("_id") @db.ObjectId
+  distance        Float
+  fare            Float
+  startTime       DateTime
+  endTime         DateTime?
+  status          RideStatus
+  pickupLocation  String
+  dropoffLocation String
+  riderId         String     @db.ObjectId
+  driverId        String?    @db.ObjectId
+  rider           User       @relation("RiderRides", fields: [riderId], references: [id])
+  driver          User?      @relation("DriverRides", fields: [driverId], references: [id])
+  reviews         Review[]
+  createdAt       DateTime   @default(now())
+
+  @@map("rides")
+}
+
+model Review {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  rating     Int // 1-5 stars
+  comment    String?
+  reviewerId String   @db.ObjectId
+  reviewedId String   @db.ObjectId
+  rideId     String   @db.ObjectId
+  reviewer   User     @relation("ReviewsGiven", fields: [reviewerId], references: [id])
+  reviewed   User     @relation("ReviewsReceived", fields: [reviewedId], references: [id])
+  ride       Ride     @relation(fields: [rideId], references: [id])
+  createdAt  DateTime @default(now())
+
+  @@map("reviews")
+}
+
+model Vehicle {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  manufacturer String
+  model        String
+  year         Int
+  color        String
+  licensePlate String   @unique
+  isActive     Boolean  @default(true)
+  userId       String   @db.ObjectId
+  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  @@map("vehicles")
+}
+
+// model User {
+//   id       String  @id @default(auto()) @map("_id") @db.ObjectId
+//   phone    String  @unique
+//   email    String? @default("")
+//   password String
+//   fullName String? @default("")
+//   dob      String? @default("")
+
+//   profileImage           String?             @default("")
+//   expirationOtp          DateTime?           @default(now())
+//   fcmToken               String?             @default("")
+//   location               String?             @default("")
+//   ssnNumber              String?             @default("")
+//   gender                 String?             @default("")
+//   licenseFrontSide       String?             @default("")
+//   licenseBackSide        String?             @default("")
+//   lat                    Float?              @default(0)
+//   lng                    Float?              @default(0)
+//   otp                    Int?                @default(0)
+//   role                   UserRole            @default(User)
+//   isNotificationOn       Boolean             @default(false)
+//   isUserOnline           Boolean             @default(true)
+//   status                 UserStatus          @default(ACTIVE)
+//   createdAt              DateTime            @default(now())
+//   updatedAt              DateTime            @updatedAt
+//   onBoarding             Boolean             @default(false)
+//   isPhoneNumberVerify    Boolean             @default(false)
+//   adminApprovedStatus    AdminApprovedStatus @default(PENDING)
+//   phoneVerificationToken String?             @default("")
+//   otpExpiresAt           DateTime?           @default(now())
+//   accountLink            String?             @default("")
+//   stripeAccountUrl       String?             @default("")
+//   stripeCustomerId       String?             @default("")
+//   stripeAccountId        String?             @default("")
+//   savedCards             SavedCard[]
+
+//   // Relations
+//   vehicles         VehicleInformation[]
+//   notifications    Notification[]
+//   reviewsWritten   Review[]             @relation("UserReview")
+//   reviewsReceived  Review[]             @relation("DriverReview")
+//   carTransports    carTransport[]
+//   ParcelChat       ParcelChat[]         @relation("SenderChat")
+//   ParcelMessage    ParcelMessage[]
+//   driverChats      ParcelChat[]         @relation("DriverChat")
+//   parcelSender     carTransport[]       @relation("ParcelSender")
+//   parcelDriver     carTransport[]       @relation("ParcelDriver")
+//   averageRating    Float?               @default(0)
+//   reviewCount      Int?                 @default(0)
+//   paymentsSent     Payment[]            @relation("PaymentSender")
+//   paymentsReceived Payment[]            @relation("PaymentReceiver")
+
+//   @@map("Users")
+// }
