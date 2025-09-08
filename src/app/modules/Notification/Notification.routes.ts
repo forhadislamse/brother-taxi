@@ -1,32 +1,32 @@
-import express from "express";
-import auth from "../../middlewares/auth";
-import { notificationController } from "./Notification.controller";
+// import express from "express";
+// import auth from "../../middlewares/auth";
+// import { notificationController } from "./Notification.controller";
 
-const router = express.Router();
-
-router.post(
-  "/send-notification/:receiverId",
-  auth(),
-  notificationController.sendNotification
-);
+// const router = express.Router();
 
 // router.post(
-//   "/send-notification",
+//   "/send-notification/:receiverId",
 //   auth(),
-//   notificationController.sendNotifications
+//   notificationController.sendNotification
 // );
 
-router.get("/", auth(), notificationController.getNotifications);
-router.get(
-  "/:notificationId",
-  auth(),
-  notificationController.getSingleNotificationById
-);
+// // router.post(
+// //   "/send-notification",
+// //   auth(),
+// //   notificationController.sendNotifications
+// // );
 
-router.delete(
-  "/:notificationId",
-  auth(),
-  notificationController.deleteNotification
-);
+// router.get("/", auth(), notificationController.getNotifications);
+// router.get(
+//   "/:notificationId",
+//   auth(),
+//   notificationController.getSingleNotificationById
+// );
 
-export const notificationsRoute = router;
+// router.delete(
+//   "/:notificationId",
+//   auth(),
+//   notificationController.deleteNotification
+// );
+
+// export const notificationsRoute = router;
