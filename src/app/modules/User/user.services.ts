@@ -95,75 +95,147 @@ import { sendMessage } from "../../../shared/sendMessage";
 
 // };
 
+// const createUserIntoDb = async (payload: User) => {
+//   const existingUser = await prisma.user.findFirst({
+//     where: {
+//       phoneNumber: payload.phoneNumber,
+//     },
+//   });
+
+//   if (existingUser) {
+//     if (existingUser.isPhoneNumberVerify === false) {
+//       await prisma.user.delete({
+//         where: {
+//           id: existingUser.id,
+//         },
+//       });
+//     } else {
+//       throw new ApiError(
+//         400,
+//         `User with this email ${payload.phoneNumber} already exists`
+//       );
+//     }
+//   }
+
+//   // if (!payload.password) {
+//   //   throw new ApiError(httpStatus.BAD_REQUEST, "Password is required.");
+//   // }
+//   // const hashedPassword = await bcrypt.hash(
+//   //   payload.password,
+//   //   Number(config.bcrypt_salt_rounds)
+//   // );
+
+//   const otp = generateOtp(4);
+//   const otpExpiry = new Date(Date.now() + 15 * 60 * 1000);
+
+//   const newUser = await prisma.user.create({
+//     data: {
+//       ...payload,
+//       // password: hashedPassword,
+//       otp,
+//       otpExpiresAt: otpExpiry,
+//     },
+//     select: {
+//       id: true,
+//       phoneNumber: true,
+//       // role: true,
+//       otp: true,
+//       createdAt: true,
+//       updatedAt: true,
+//     },
+//   });
+
+//   console.log(payload.phoneNumber);
+
+//   try {
+//     //     if (payload.phone.startsWith("+")) {
+//     //   throw new ApiError(
+//     //     httpStatus.BAD_REQUEST,
+//     //     "Phone number must be in E.164 format with country code."
+//     //   );
+//     // }
+
+//     const messageBody = `Here is your new OTP code: ${otp}. It will expire in 5 minutes.`;
+
+//     await sendMessage(messageBody, payload.phoneNumber);
+//   } catch (error) {
+//     console.error(`Failed to send OTP email:`, error);
+//   }
+
+//   return newUser;
+// };
+
 const createUserIntoDb = async (payload: User) => {
+  // check existing user
   const existingUser = await prisma.user.findFirst({
-    where: {
-      phoneNumber: payload.phoneNumber,
-    },
+    where: { phoneNumber: payload.phoneNumber },
   });
 
   if (existingUser) {
     if (existingUser.isPhoneNumberVerify === false) {
+      // পুরানো unverified user মুছে ফেলবো
       await prisma.user.delete({
-        where: {
-          id: existingUser.id,
-        },
+        where: { id: existingUser.id },
       });
     } else {
       throw new ApiError(
-        400,
-        `User with this email ${payload.phoneNumber} already exists`
+        httpStatus.BAD_REQUEST,
+        `User with this phone number ${payload.phoneNumber} already exists`
       );
     }
   }
 
-  // if (!payload.password) {
-  //   throw new ApiError(httpStatus.BAD_REQUEST, "Password is required.");
-  // }
-  // const hashedPassword = await bcrypt.hash(
-  //   payload.password,
-  //   Number(config.bcrypt_salt_rounds)
-  // );
-
+  // otp generate
   const otp = generateOtp(4);
-  const otpExpiry = new Date(Date.now() + 15 * 60 * 1000);
+  const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
 
+  // dynamic data prepare
+  const data: any = {
+    phoneNumber: payload.phoneNumber,
+    otp,
+    otpExpiresAt: otpExpiry,
+  };
+
+  // optional email
+  if (payload.email && payload.email.trim() !== "") {
+    data.email = payload.email;
+  }
+
+  // optional password
+  if (payload.password && payload.password.trim() !== "") {
+    const hashedPassword = await bcrypt.hash(
+      payload.password,
+      Number(config.bcrypt_salt_rounds)
+    );
+    data.password = hashedPassword;
+  }
+
+  // user create
   const newUser = await prisma.user.create({
-    data: {
-      ...payload,
-      // password: hashedPassword,
-      otp,
-      otpExpiresAt: otpExpiry,
-    },
+    data,
     select: {
       id: true,
       phoneNumber: true,
-      // role: true,
+      email: true,
       otp: true,
       createdAt: true,
       updatedAt: true,
     },
   });
 
-  console.log(payload.phoneNumber);
+  console.log("✅ User created with phone:", payload.phoneNumber);
 
+  // otp send
   try {
-    //     if (payload.phone.startsWith("+")) {
-    //   throw new ApiError(
-    //     httpStatus.BAD_REQUEST,
-    //     "Phone number must be in E.164 format with country code."
-    //   );
-    // }
-
-    const messageBody = `Here is your new OTP code: ${otp}. It will expire in 5 minutes.`;
-
+    const messageBody = `Here is your OTP code: ${otp}. It will expire in 5 minutes.`;
     await sendMessage(messageBody, payload.phoneNumber);
   } catch (error) {
-    console.error(`Failed to send OTP email:`, error);
+    console.error("❌ Failed to send OTP:", error);
   }
 
   return newUser;
 };
+
 
 
 // // get user profile

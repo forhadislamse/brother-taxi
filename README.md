@@ -5,7 +5,7 @@
 ## Table of Contents
 - [Auth Routes](#auth-routes)
 
-
+## https://documenter.getpostman.com/view/34968572/2sB3HnJemK
 ## Auth Routes
 - **POST /auth/login**: Login a user
 - **POST /auth/logout**: Logout a user

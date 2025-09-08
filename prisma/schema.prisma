@@ -41,7 +41,7 @@ model User {
 
   // ───── Contact Info
   phoneNumber String  @unique
-  email       String? @unique
+  email       String? 
   city        String? // City for drivers
   location    String? @default("") // Current address text
   lat         Float?  @default(0) // Current latitude
