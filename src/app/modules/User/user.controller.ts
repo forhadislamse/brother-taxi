@@ -23,6 +23,8 @@ const createUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 
+
+
 const getMyProfile = catchAsync(async (req: Request, res: Response) => {
   const userToken = req.headers.authorization;
 
@@ -36,15 +38,14 @@ const getMyProfile = catchAsync(async (req: Request, res: Response) => {
 });
 
 
-// * Update user profile
+// // * Update user profile
 const updateProfileController = catchAsync(async (req: Request, res: Response) => {
-
   const userId = req.user.id;
-  const updateData = JSON.parse(req.body.data);
+  const updateData = JSON.parse(req.body.data); // Ensure client sends JSON string
   const file = req.file;
 
-
   const user = await userService.updateUserProfile(userId, updateData, file);
+
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
@@ -52,6 +53,7 @@ const updateProfileController = catchAsync(async (req: Request, res: Response) =
     data: user,
   });
 });
+
 
 
 // const postDemoVideo = async(req: any, res: Response) => {

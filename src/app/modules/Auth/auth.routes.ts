@@ -9,48 +9,52 @@ import { authValidation } from "./auth.validation";
 const router = express.Router();
 
 // user login route
-router.post(
-  "/login",
-  // validateRequest(UserValidation.UserLoginValidationSchema),
-  AuthController.loginUser
-);
+// router.post(
+//   "/login",
+//   // validateRequest(UserValidation.UserLoginValidationSchema),
+//   AuthController.loginUser
+// );
 
 // user logout route
 router.post("/logout", AuthController.logoutUser);
 
 //user verify phone
 router.post("/verify-login", AuthController.verifyLogin);
+router.post("/resend-otp", AuthController.resendOtp);
 
-router.put(
-  "/change-password",
-  auth(),
-  // validateRequest(authValidation.changePasswordValidationSchema),
-  AuthController.changePassword
-);
+// router.put(
+//   "/change-password",
+//   auth(),
+//   // validateRequest(authValidation.changePasswordValidationSchema),
+//   AuthController.changePassword
+// );
 
+// router.post("/request-otp", AuthController.requestOtp);
+//resend otp
 
-router.post(
-  '/forgot-password',
-  AuthController.forgotPassword
-);
-router.post(
-  '/resend-otp',
-  AuthController.resendOtp
-);
-router.post(
-  '/verify-otp',
-  AuthController.verifyForgotPasswordOtp
-);
+//forgot password
+// router.post(
+//   '/forgot-password',
+//   AuthController.forgotPassword
+// );
+// router.post(
+//   '/resend-otp',
+//   AuthController.resendOtp
+// );
+// router.post(
+//   '/verify-otp',
+//   AuthController.verifyForgotPasswordOtp
+// );
 
-router.post(
-  '/reset-password',
-  AuthController.resetPassword
-)
+// router.post(
+//   '/reset-password',
+//   AuthController.resetPassword
+// )
 
-router.delete(
-  '/delete-account',
-  auth(),
-  AuthController.deleteUserController
-);
+// router.delete(
+//   '/delete-account',
+//   auth(),
+//   AuthController.deleteUserController
+// );
 
 export const AuthRoutes = router;

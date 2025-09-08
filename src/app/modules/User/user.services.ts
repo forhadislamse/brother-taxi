@@ -13,6 +13,88 @@ import { sendMessage } from "../../../shared/sendMessage";
 
 
 
+// const createUserIntoDb = async (payload: User) => {
+//   const existingUser = await prisma.user.findFirst({
+//     where: {
+//       phoneNumber: payload.phoneNumber,
+//     },
+//   });
+
+//   if (existingUser) {
+//     if (existingUser.isPhoneNumberVerify === false) {
+//       await prisma.user.delete({
+//         where: {
+//           id: existingUser.id,
+//         },
+//       });
+//     } else {
+//       throw new ApiError(
+//         400,
+//         `User with this number ${payload.phoneNumber} already exists`
+//       );
+//     }
+//   }
+
+//   // const hashedPassword: string = await bcrypt.hash(
+//   //   payload.password,
+//   //   Number(config.bcrypt_salt_rounds)
+//   // );
+
+//   const otp = generateOtp(4);
+//   const otpExpiry = new Date(Date.now() + 15 * 60 * 1000);
+
+//   const newUser = await prisma.user.create({
+//     data: {
+//       ...payload,
+//       // password: hashedPassword,
+//       otp,
+//       otpExpiresAt: otpExpiry,
+//     },
+//     select: {
+//       id: true,
+//       phoneNumber: true,
+//       // role: true,
+//       otp: true,
+//       createdAt: true,
+//       updatedAt: true,
+//     },
+//   });
+
+//   console.log(payload.phoneNumber);
+
+//   try {
+//     //     if (payload.phone.startsWith("+")) {
+//     //   throw new ApiError(
+//     //     httpStatus.BAD_REQUEST,
+//     //     "Phone number must be in E.164 format with country code."
+//     //   );
+//     // }
+
+//     const messageBody = `Here is your new OTP code: ${otp}. It will expire in 5 minutes.`;
+
+//     await sendMessage(messageBody, payload.phoneNumber);
+//   } catch (error) {
+//     console.error(`Failed to send OTP:`, error);
+//   }
+  
+//    const accessToken = jwtHelpers.generateToken(
+//       {
+//         id: newUser.id,
+//         phoneNumber: newUser.phoneNumber,
+//       },
+//       config.jwt.jwt_secret as Secret,
+//       config.jwt.expires_in as string
+//     );
+
+
+//   if (!newUser) {
+//     throw new ApiError(httpStatus.BAD_REQUEST, "User creation failed. Please check the input data.");
+//   }
+
+//   return {newUser, token: accessToken};
+
+// };
+
 const createUserIntoDb = async (payload: User) => {
   const existingUser = await prisma.user.findFirst({
     where: {
@@ -30,15 +112,18 @@ const createUserIntoDb = async (payload: User) => {
     } else {
       throw new ApiError(
         400,
-        `User with this number ${payload.phoneNumber} already exists`
+        `User with this email ${payload.phoneNumber} already exists`
       );
     }
   }
 
-  const hashedPassword: string = await bcrypt.hash(
-    payload.password,
-    Number(config.bcrypt_salt_rounds)
-  );
+  // if (!payload.password) {
+  //   throw new ApiError(httpStatus.BAD_REQUEST, "Password is required.");
+  // }
+  // const hashedPassword = await bcrypt.hash(
+  //   payload.password,
+  //   Number(config.bcrypt_salt_rounds)
+  // );
 
   const otp = generateOtp(4);
   const otpExpiry = new Date(Date.now() + 15 * 60 * 1000);
@@ -46,14 +131,14 @@ const createUserIntoDb = async (payload: User) => {
   const newUser = await prisma.user.create({
     data: {
       ...payload,
-      password: hashedPassword,
+      // password: hashedPassword,
       otp,
       otpExpiresAt: otpExpiry,
     },
     select: {
       id: true,
       phoneNumber: true,
-      role: true,
+      // role: true,
       otp: true,
       createdAt: true,
       updatedAt: true,
@@ -74,13 +159,14 @@ const createUserIntoDb = async (payload: User) => {
 
     await sendMessage(messageBody, payload.phoneNumber);
   } catch (error) {
-    console.error(`Failed to send OTP:`, error);
+    console.error(`Failed to send OTP email:`, error);
   }
 
   return newUser;
 };
 
-// get user profile
+
+// // get user profile
 const getMyProfile = async (userToken: string) => {
   const decodedToken = jwtHelpers.verifyToken(
     userToken,
@@ -96,35 +182,36 @@ const getMyProfile = async (userToken: string) => {
   return userProfile;
 };
 
-const updateUserProfile = async (userId: string, updateData: Partial<IUser>, file?: Express.Multer.File) => {
-  // Check if user exists
-  const user = await prisma.user.findUnique({
-    where: { id: userId },
-  });
-  if (!user) {
-    throw new ApiError(404, "User not found");
-  }
+const updateUserProfile = async (
+  userId: string,
+  updateData: Partial<IUser>,
+  file?: Express.Multer.File
+) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new ApiError(404, "User not found");
 
-
-
-  // If file exists, upload and set profileImage url
+  // File upload
   if (file) {
     const uploadedImageUrl = await fileUploader.uploadToDigitalOcean(file);
     updateData.profileImage = uploadedImageUrl.Location;
   }
 
-  // Update user profile with only provided fields
+  // Prevent overwriting sensitive fields
+  delete updateData.password;
+  delete updateData.otp;
+  delete updateData.otpExpiresAt;
+
   const updatedUser = await prisma.user.update({
     where: { id: userId },
     data: {
       ...updateData,
       updatedAt: new Date(),
     },
-    
   });
 
   return updatedUser;
 };
+
 
 // const postDemoVideo = async (file: any, userId: string) => {
 

@@ -14,7 +14,7 @@ export interface IUser {
   lat?: number;
   lng?: number;
 
-  password: string;
+  password?: string;
   role: UserRole;      // RIDER | DRIVER | ADMIN (যদি enum এ থাকে)
   status: UserStatus;   // ACTIVE | INACTIVE | BLOCKED (যদি enum এ থাকে)
   otp?: number;
