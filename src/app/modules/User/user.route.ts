@@ -29,6 +29,13 @@ router.patch(
   userController.updateProfileController
 );
 
+router.get("/drivers/pending", auth(), userController.getDriversPendingApproval);
+
+router.get("/all", auth(), userController.getAllUser);
+
+// Admin approves or rejects a driver
+router.put("/drivers/approve", auth(), userController.updateDriverApprovalStatus);
+
 // router.post("/demo-class", auth(), fileUploader.uploadFile, userController.postDemoVideo )
 
 

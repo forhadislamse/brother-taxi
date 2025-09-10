@@ -6,6 +6,7 @@ import { Request, Response } from "express";
 import pick from "../../../shared/pick";
 import { userFilterableFields } from "./user.costant";
 import ApiError from "../../../errors/ApiErrors";
+import { get } from "lodash";
 
 const createUser = catchAsync(async (req: Request, res: Response) => {
 
@@ -37,6 +38,20 @@ const getMyProfile = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getAllUser = catchAsync(async (req: Request, res: Response) => {
+  const filters = req.query;
+  const result = await userService.getAllUsers(filters);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "All User retrieved successfully",
+    meta: result.meta,
+    data: result.data,
+  });
+});
+
+
 
 // // * Update user profile
 const updateProfileController = catchAsync(async (req: Request, res: Response) => {
@@ -54,7 +69,40 @@ const updateProfileController = catchAsync(async (req: Request, res: Response) =
   });
 });
 
+// Get all drivers with adminApprovedStatus = PENDING
+const getDriversPendingApproval = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.getDriversPendingApproval();
 
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Drivers pending approval retrieved successfully",
+    data: result,
+  });
+});
+
+// Update adminApprovedStatus for a driver
+const updateDriverApprovalStatus = catchAsync(async (req: Request, res: Response) => {
+  const userToken = req.headers.authorization;
+  const { userId, status } = req.body; // status: APPROVED | REJECTED
+
+  if (!userId || !status) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "UserId and status are required");
+  }
+
+  if (!["APPROVED", "REJECTED"].includes(status)) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Invalid status");
+  }
+
+  const result = await userService.updateDriverApprovalStatus(userToken as string, userId, status);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: `Driver adminApprovedStatus updated to ${status}`,
+    data: result,
+  });
+});
 
 // const postDemoVideo = async(req: any, res: Response) => {
 
@@ -74,6 +122,9 @@ const updateProfileController = catchAsync(async (req: Request, res: Response) =
 export const userController = {
   createUser,
   getMyProfile,
+  getAllUser,
   updateProfileController,
+  updateDriverApprovalStatus,
+  getDriversPendingApproval,
   // postDemoVideo
 };

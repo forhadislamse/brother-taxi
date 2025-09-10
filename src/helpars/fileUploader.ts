@@ -97,7 +97,7 @@ const uploadToDigitalOcean = async (file: Express.Multer.File) => {
   }
 
   try {
-    const Key = `nathancloud/${Date.now()}_${uuidv4()}_${file.originalname}`;
+    const Key = `brothertaxi/${Date.now()}_${uuidv4()}_${file.originalname}`;
     const uploadParams = {
       Bucket: process.env.DO_SPACE_BUCKET || "",
       Key,

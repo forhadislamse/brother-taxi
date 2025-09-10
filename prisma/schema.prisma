@@ -14,6 +14,12 @@ enum UserRole {
   PENDING
 }
 
+enum AdminApprovedStatus {
+  PENDING
+  APPROVED
+  REJECTED
+}
+
 enum UserStatus {
   ACTIVE
   INACTIVE
@@ -28,60 +34,127 @@ enum RideStatus {
   CANCELLED
 }
 
+enum Gender {
+  MALE
+  FEMALE
+  OTHER
+}
+
+
+// model User {
+//   // ───── Identity
+//   id           String  @id @default(auto()) @map("_id") @db.ObjectId
+//   fullName     String? @default("")
+//   dob          String? @default("") // Date of Birth
+//   gender       Gender? @default(MALE)
+//   nidNumber    String? @default("") // National ID / SSN
+//   referralCode String? // For referral program
+//   documents    Json? // Store extra driver/rider documents
+//   address      String? @default("") // Permanent address text
+
+//   // ───── Contact Info
+//   phoneNumber String  @unique
+//   email       String? 
+//   city        String? // City for drivers
+//   location    String? @default("") // Current address text
+//   lat         Float?  @default(0) // Current latitude
+//   lng         Float?  @default(0) // Current longitude
+
+//   // ───── Authentication & Security
+//   password               String?
+//   role                   UserRole   @default(PENDING)
+//   status                 UserStatus @default(ACTIVE)
+//   otp                    Int?
+//   otpExpiresAt           DateTime?  @default(now())
+//   phoneVerificationToken String?    @default("")
+//   isPhoneNumberVerify    Boolean    @default(false)
+
+//   // ───── Profile & Preferences
+//   profileImage     String?
+//   fcmToken         String? @default("")
+//   isNotificationOn Boolean @default(false)
+//   isUserOnline     Boolean @default(true)
+//   onBoarding       Boolean @default(false)
+
+//   // ───── Driver Specific
+//   licensePlate     String? // Car license plate
+//   drivingLicense   String? // Driving license number or file
+//   licenseFrontSide String? @default("")
+//   licenseBackSide  String? @default("")
+//   taxiManufacturer String? // Car brand (e.g. Toyota, Honda)
+//   bhNumber         String? // Driver badge number
+//   isApproved       Boolean @default(false) // Admin approval for drivers
+
+//   // ───── Stats & Metrics
+//   rating        Float? @default(0)
+//   totalDistance Float? @default(0) // In kilometers
+//   totalRides    Int?   @default(0) // Rider trips count
+//   totalTrips    Int?   @default(0) // Driver trips count
+
+//   // ───── Timestamps
+//   createdAt DateTime @default(now())
+//   updatedAt DateTime @updatedAt
+
+//   // ───── Relationships
+//   ridesAsRider    Ride[]   @relation("RiderRides")
+//   ridesAsDriver   Ride[]   @relation("DriverRides")
+//   reviewsGiven    Review[] @relation("ReviewsGiven")
+//   reviewsReceived Review[] @relation("ReviewsReceived")
+//   wallet          Wallet?
+//   vehicles        Vehicle[]
+
+//   @@map("users")
+// }
 
 model User {
-  // ───── Identity
-  id           String  @id @default(auto()) @map("_id") @db.ObjectId
-  fullName     String? @default("")
-  dob          String? @default("") // Date of Birth
-  gender       String? @default("")
-  nidNumber    String? @default("") // National ID / SSN
-  referralCode String? // For referral program
-  documents    Json? // Store extra driver/rider documents
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  fullName     String?  @default("")
+  dob          String?  @default("")
+  gender       Gender  @default(MALE)
+  nidNumber    String?  @default("")
+  referralCode String?  
+  documents    Json?    
+  address      String?  @default("")
 
-  // ───── Contact Info
   phoneNumber String  @unique
   email       String? 
-  city        String? // City for drivers
-  location    String? @default("") // Current address text
-  lat         Float?  @default(0) // Current latitude
-  lng         Float?  @default(0) // Current longitude
+  city        String? 
+  location    String? @default("")
+  lat         Float?  @default(0)
+  lng         Float?  @default(0)
 
-  // ───── Authentication & Security
   password               String?
-  role                   UserRole   @default(PENDING)
+  role                   UserRole
   status                 UserStatus @default(ACTIVE)
   otp                    Int?
-  otpExpiresAt           DateTime?  @default(now())
-  phoneVerificationToken String?    @default("")
+  otpExpiresAt           DateTime?  
+  phoneVerificationToken String?    
   isPhoneNumberVerify    Boolean    @default(false)
 
-  // ───── Profile & Preferences
   profileImage     String?
   fcmToken         String? @default("")
   isNotificationOn Boolean @default(false)
   isUserOnline     Boolean @default(true)
   onBoarding       Boolean @default(false)
 
-  // ───── Driver Specific
-  licensePlate     String? // Car license plate
-  drivingLicense   String? // Driving license number or file
+  // Driver-specific (optional)
+  licensePlate     String? 
+  drivingLicense   String? 
   licenseFrontSide String? @default("")
   licenseBackSide  String? @default("")
-  taxiManufacturer String? // Car brand (e.g. Toyota, Honda)
-  bhNumber         String? // Driver badge number
+  taxiManufacturer String? 
+  bhNumber         String? 
+  adminApprovedStatus    AdminApprovedStatus @default(PENDING)
+  // isApproved       Boolean @default(false)
 
-  // ───── Stats & Metrics
   rating        Float? @default(0)
-  totalDistance Float? @default(0) // In kilometers
-  totalRides    Int?   @default(0) // Rider trips count
-  totalTrips    Int?   @default(0) // Driver trips count
+  totalDistance Float? @default(0)
+  totalRides    Int?   @default(0)
+  totalTrips    Int?   @default(0)
 
-  // ───── Timestamps
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  // ───── Relationships
   ridesAsRider    Ride[]   @relation("RiderRides")
   ridesAsDriver   Ride[]   @relation("DriverRides")
   reviewsGiven    Review[] @relation("ReviewsGiven")
@@ -91,6 +164,7 @@ model User {
 
   @@map("users")
 }
+
 
 model Wallet {
   id      String @id @default(auto()) @map("_id") @db.ObjectId
@@ -135,19 +209,23 @@ model Review {
   @@map("reviews")
 }
 
+
 model Vehicle {
   id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId       String   @db.ObjectId
   manufacturer String
   model        String
   year         Int
+  image        String?
   color        String
-  licensePlate String   @unique
+  licensePlateNumber  String   @unique
   isActive     Boolean  @default(true)
-  userId       String   @db.ObjectId
-  user         User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  bh           String   // same as your schema
+  refferalCode String
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 
+  driver User @relation(fields: [userId], references: [id])
   @@map("vehicles")
 }
 
