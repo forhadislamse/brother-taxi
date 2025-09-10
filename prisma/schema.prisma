@@ -40,7 +40,6 @@ enum Gender {
   OTHER
 }
 
-
 // model User {
 //   // ───── Identity
 //   id           String  @id @default(auto()) @map("_id") @db.ObjectId
@@ -107,18 +106,18 @@ enum Gender {
 // }
 
 model User {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  fullName     String?  @default("")
-  dob          String?  @default("")
+  id           String  @id @default(auto()) @map("_id") @db.ObjectId
+  fullName     String? @default("")
+  dob          String? @default("")
   gender       Gender  @default(MALE)
-  nidNumber    String?  @default("")
-  referralCode String?  
-  documents    Json?    
-  address      String?  @default("")
+  nidNumber    String? @default("")
+  referralCode String?
+  documents    Json?
+  address      String? @default("")
 
   phoneNumber String  @unique
-  email       String? 
-  city        String? 
+  email       String?
+  city        String?
   location    String? @default("")
   lat         Float?  @default(0)
   lng         Float?  @default(0)
@@ -127,8 +126,8 @@ model User {
   role                   UserRole
   status                 UserStatus @default(ACTIVE)
   otp                    Int?
-  otpExpiresAt           DateTime?  
-  phoneVerificationToken String?    
+  otpExpiresAt           DateTime?
+  phoneVerificationToken String?
   isPhoneNumberVerify    Boolean    @default(false)
 
   profileImage     String?
@@ -138,13 +137,13 @@ model User {
   onBoarding       Boolean @default(false)
 
   // Driver-specific (optional)
-  licensePlate     String? 
-  drivingLicense   String? 
-  licenseFrontSide String? @default("")
-  licenseBackSide  String? @default("")
-  taxiManufacturer String? 
-  bhNumber         String? 
-  adminApprovedStatus    AdminApprovedStatus @default(PENDING)
+  licensePlate        String?
+  drivingLicense      String?
+  licenseFrontSide    String?             @default("")
+  licenseBackSide     String?             @default("")
+  taxiManufacturer    String?
+  bhNumber            String?
+  adminApprovedStatus AdminApprovedStatus @default(PENDING)
   // isApproved       Boolean @default(false)
 
   rating        Float? @default(0)
@@ -155,131 +154,178 @@ model User {
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  ridesAsRider    Ride[]   @relation("RiderRides")
-  ridesAsDriver   Ride[]   @relation("DriverRides")
-  reviewsGiven    Review[] @relation("ReviewsGiven")
-  reviewsReceived Review[] @relation("ReviewsReceived")
-  wallet          Wallet?
+  // ridesAsRider    Ride[]   @relation("RiderRides")
+  // ridesAsDriver   Ride[]   @relation("DriverRides")
+  reviewsGiven    Review[]       @relation("ReviewsGiven")
+  reviewsReceived Review[]       @relation("ReviewsReceived")
+  // wallet          Wallet?
   vehicles        Vehicle[]
+  carTransports   CarTransport[]
+  parcelDriver    CarTransport[] @relation("ParcelDriver")
+  parcelSender    CarTransport[] @relation("ParcelSender")
 
   @@map("users")
 }
 
+// model Wallet {
+//   id      String @id @default(auto()) @map("_id") @db.ObjectId
+//   balance Float  @default(0)
+//   userId  String @unique @db.ObjectId
+//   user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-model Wallet {
-  id      String @id @default(auto()) @map("_id") @db.ObjectId
-  balance Float  @default(0)
-  userId  String @unique @db.ObjectId
-  user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+//   @@map("wallets")
+// }
 
-  @@map("wallets")
+// model Ride {
+//   id              String     @id @default(auto()) @map("_id") @db.ObjectId
+//   distance        Float
+//   fare            Float
+//   startTime       DateTime
+//   endTime         DateTime?
+//   status          RideStatus
+//   pickupLocation  String
+//   dropoffLocation String
+//   riderId         String     @db.ObjectId
+//   driverId        String?    @db.ObjectId
+//   rider           User       @relation("RiderRides", fields: [riderId], references: [id])
+//   driver          User?      @relation("DriverRides", fields: [driverId], references: [id])
+//   reviews         Review[]
+//   createdAt       DateTime   @default(now())
+
+//   @@map("rides")
+// }
+
+model CarTransport {
+  id        String @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String @db.ObjectId
+  vehicleId String @db.ObjectId
+
+  // ───── Ride Locations
+  pickupLocation  String? @default("")
+  dropOffLocation String? @default("")
+  pickupLat       Float?  @default(0)
+  pickupLng       Float?  @default(0)
+  dropOffLat      Float?  @default(0)
+  dropOffLng      Float?  @default(0)
+  driverLat       Float?  @default(0)
+  driverLng       Float?  @default(0)
+
+  // ───── Fare & Payment
+  totalAmount     Float?        @default(0)
+  platformFee     Float?        @default(0)
+  platformFeeType String?       @default("")
+  paymentMethod   String?       @default("CARD")
+  paymentStatus   PaymentStatus @default(PENDING)
+  isPayment       Boolean       @default(false)
+
+  // ───── Scheduling
+  pickupDate String? @default("")
+  pickupTime String? @default("")
+
+  // ───── Status Tracking
+  status                  TransportStatus @default(PENDING)
+  assignedDriver          String?         @db.ObjectId
+  assignedDriverReqStatus String?         @default("PENDING")
+  isDriverReqCancel       Boolean         @default(true)
+  arrivalConfirmation     Boolean         @default(false)
+  journeyStarted          Boolean         @default(false)
+  journeyCompleted        Boolean         @default(false)
+
+  // ───── Service Details
+  // serviceType   ServiceType @default(Airport_pickup)
+  specialNotes String? @default("")
+
+  // ───── Media / Evidence
+  beforePickupImages String[] @default([])
+  afterPickupImages  String[] @default([])
+
+  // ───── Cancellation
+  cancelReason String? @default("") // Optional: user can provide reason for cancel
+
+  // ───── Timestamps
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  // ───── Relations
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  driver  User?   @relation("ParcelDriver", fields: [assignedDriver], references: [id], onDelete: Cascade)
+  sender  User?   @relation("ParcelSender", fields: [userId], references: [id], onDelete: Cascade)
+
+  Review Review[] // ride feedback
+  // fare   Fare[]
+  // ParcelChat ParcelChat[]    // chat between rider and driver
+  // Payment    Payment[]       @relation("carTransportPayment") // multiple payments if needed
+
+  @@map("carTransports")
 }
 
-model Ride {
-  id              String     @id @default(auto()) @map("_id") @db.ObjectId
-  distance        Float
-  fare            Float
-  startTime       DateTime
-  endTime         DateTime?
-  status          RideStatus
-  pickupLocation  String
-  dropoffLocation String
-  riderId         String     @db.ObjectId
-  driverId        String?    @db.ObjectId
-  rider           User       @relation("RiderRides", fields: [riderId], references: [id])
-  driver          User?      @relation("DriverRides", fields: [driverId], references: [id])
-  reviews         Review[]
-  createdAt       DateTime   @default(now())
-
-  @@map("rides")
+// Enums
+enum TransportStatus {
+  ONGOING
+  PENDING
+  COMPLETED
+  CANCELLED
 }
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
+// enum ServiceType {
+//   Airport_pickup
+//   Airport_dropoff
+//   City_ride
+//   Parcel_delivery
+// }
 
 model Review {
-  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  id         String       @id @default(auto()) @map("_id") @db.ObjectId
   rating     Int // 1-5 stars
   comment    String?
-  reviewerId String   @db.ObjectId
-  reviewedId String   @db.ObjectId
-  rideId     String   @db.ObjectId
-  reviewer   User     @relation("ReviewsGiven", fields: [reviewerId], references: [id])
-  reviewed   User     @relation("ReviewsReceived", fields: [reviewedId], references: [id])
-  ride       Ride     @relation(fields: [rideId], references: [id])
-  createdAt  DateTime @default(now())
+  reviewerId String       @db.ObjectId
+  reviewedId String       @db.ObjectId
+  rideId     String       @db.ObjectId
+  reviewer   User         @relation("ReviewsGiven", fields: [reviewerId], references: [id])
+  reviewed   User         @relation("ReviewsReceived", fields: [reviewedId], references: [id])
+  ride       CarTransport @relation(fields: [rideId], references: [id])
+  createdAt  DateTime     @default(now())
 
   @@map("reviews")
 }
 
-
 model Vehicle {
-  id           String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId       String   @db.ObjectId
-  manufacturer String
-  model        String
-  year         Int
-  image        String?
-  color        String
-  licensePlateNumber  String   @unique
-  isActive     Boolean  @default(true)
-  bh           String   // same as your schema
-  refferalCode String
-  createdAt    DateTime @default(now())
-  updatedAt    DateTime @updatedAt
+  id                 String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId             String   @db.ObjectId
+  manufacturer       String
+  model              String
+  year               Int
+  image              String?
+  color              String
+  licensePlateNumber String   @unique
+  isActive           Boolean  @default(true)
+  bh                 String // same as your schema
+  refferalCode       String
+  createdAt          DateTime @default(now())
+  updatedAt          DateTime @updatedAt
 
-  driver User @relation(fields: [userId], references: [id])
+  driver        User           @relation(fields: [userId], references: [id])
+  carTransports CarTransport[] // Opposite relation field for CarTransport.vehicle
+
   @@map("vehicles")
 }
 
-// model User {
-//   id       String  @id @default(auto()) @map("_id") @db.ObjectId
-//   phone    String  @unique
-//   email    String? @default("")
-//   password String
-//   fullName String? @default("")
-//   dob      String? @default("")
+model Fare {
+  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  // carTransportId String       @db.ObjectId
+  // carTransport   CarTransport @relation(fields: [carTransportId], references: [id], onDelete: Cascade)
+  baseFare       Float
+  costPerKm      Float
+  isActive       Boolean      @default(true)
+  createdAt      DateTime     @default(now())
+  updatedAt      DateTime     @updatedAt
 
-//   profileImage           String?             @default("")
-//   expirationOtp          DateTime?           @default(now())
-//   fcmToken               String?             @default("")
-//   location               String?             @default("")
-//   ssnNumber              String?             @default("")
-//   gender                 String?             @default("")
-//   licenseFrontSide       String?             @default("")
-//   licenseBackSide        String?             @default("")
-//   lat                    Float?              @default(0)
-//   lng                    Float?              @default(0)
-//   otp                    Int?                @default(0)
-//   role                   UserRole            @default(User)
-//   isNotificationOn       Boolean             @default(false)
-//   isUserOnline           Boolean             @default(true)
-//   status                 UserStatus          @default(ACTIVE)
-//   createdAt              DateTime            @default(now())
-//   updatedAt              DateTime            @updatedAt
-//   onBoarding             Boolean             @default(false)
-//   isPhoneNumberVerify    Boolean             @default(false)
-//   adminApprovedStatus    AdminApprovedStatus @default(PENDING)
-//   phoneVerificationToken String?             @default("")
-//   otpExpiresAt           DateTime?           @default(now())
-//   accountLink            String?             @default("")
-//   stripeAccountUrl       String?             @default("")
-//   stripeCustomerId       String?             @default("")
-//   stripeAccountId        String?             @default("")
-//   savedCards             SavedCard[]
-
-//   // Relations
-//   vehicles         VehicleInformation[]
-//   notifications    Notification[]
-//   reviewsWritten   Review[]             @relation("UserReview")
-//   reviewsReceived  Review[]             @relation("DriverReview")
-//   carTransports    carTransport[]
-//   ParcelChat       ParcelChat[]         @relation("SenderChat")
-//   ParcelMessage    ParcelMessage[]
-//   driverChats      ParcelChat[]         @relation("DriverChat")
-//   parcelSender     carTransport[]       @relation("ParcelSender")
-//   parcelDriver     carTransport[]       @relation("ParcelDriver")
-//   averageRating    Float?               @default(0)
-//   reviewCount      Int?                 @default(0)
-//   paymentsSent     Payment[]            @relation("PaymentSender")
-//   paymentsReceived Payment[]            @relation("PaymentReceiver")
-
-//   @@map("Users")
-// }
+  @@map("fares")
+}

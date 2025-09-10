@@ -7,6 +7,7 @@ import pick from "../../../shared/pick";
 import { userFilterableFields } from "./user.costant";
 import ApiError from "../../../errors/ApiErrors";
 import { get } from "lodash";
+import { fileUploader } from "../../../helpars/fileUploader";
 
 const createUser = catchAsync(async (req: Request, res: Response) => {
 
@@ -51,9 +52,55 @@ const getAllUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const uploadDriverLicense = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+  let licenseFrontSide: string | undefined;
+  let licenseBackSide: string | undefined;
+
+  if (files?.licenseFrontSide?.[0]) {
+    const uploaded = await fileUploader.uploadToDigitalOcean(files.licenseFrontSide[0]);
+    licenseFrontSide = uploaded.Location;
+  }
+
+  if (files?.licenseBackSide?.[0]) {
+    const uploaded = await fileUploader.uploadToDigitalOcean(files.licenseBackSide[0]);
+    licenseBackSide = uploaded.Location;
+  }
+
+  const user = await userService.updateDriverLicense(
+    userId,
+    licenseFrontSide,
+    licenseBackSide
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Driver license uploaded successfully",
+    data: user,
+  });
+});
+
 
 
 // // * Update user profile
+
+const getDriversPendingApproval = catchAsync(async (req: Request, res: Response) => {
+  const userToken = req.headers.authorization;
+
+  const result = await userService.getDriversPendingApproval(userToken as string);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Drivers pending approval retrieved successfully",
+    data: result,
+  });
+});
+
+
 const updateProfileController = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id;
   const updateData = JSON.parse(req.body.data); // Ensure client sends JSON string
@@ -70,16 +117,16 @@ const updateProfileController = catchAsync(async (req: Request, res: Response) =
 });
 
 // Get all drivers with adminApprovedStatus = PENDING
-const getDriversPendingApproval = catchAsync(async (req: Request, res: Response) => {
-  const result = await userService.getDriversPendingApproval();
+// const getDriversPendingApproval = catchAsync(async (req: Request, res: Response) => {
+//   const result = await userService.getDriversPendingApproval();
 
-  sendResponse(res, {
-    statusCode: httpStatus.OK,
-    success: true,
-    message: "Drivers pending approval retrieved successfully",
-    data: result,
-  });
-});
+//   sendResponse(res, {
+//     statusCode: httpStatus.OK,
+//     success: true,
+//     message: "Drivers pending approval retrieved successfully",
+//     data: result,
+//   });
+// });
 
 // Update adminApprovedStatus for a driver
 const updateDriverApprovalStatus = catchAsync(async (req: Request, res: Response) => {
@@ -123,6 +170,7 @@ export const userController = {
   createUser,
   getMyProfile,
   getAllUser,
+  uploadDriverLicense,
   updateProfileController,
   updateDriverApprovalStatus,
   getDriversPendingApproval,

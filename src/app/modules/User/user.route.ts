@@ -5,8 +5,17 @@ import { userController } from "./user.controller";
 import auth from "../../middlewares/auth";
 import { UserRole } from "@prisma/client";
 import { fileUploader } from "../../../helpars/fileUploader";
+import multer from "multer";
 
 const router = express.Router();
+// Configure multer for user profile updates
+const storage = multer.memoryStorage();
+const upload = multer({ storage });
+const licenseUpload = upload.fields([
+  // { name: "DriverLicenseImage", maxCount: 1 },
+  { name: "licenseFrontSide", maxCount: 1 },
+  { name: "licenseBackSide", maxCount: 1 },
+]);
 
 // 
 router.post(
@@ -19,6 +28,16 @@ router.get(
   "/get-me",
   auth(),
   userController.getMyProfile
+);
+
+// License upload
+
+
+router.patch(
+  "/upload-license",
+  auth(),
+  licenseUpload,
+  userController.uploadDriverLicense
 );
 
 router.patch(

@@ -178,6 +178,26 @@ const getAllUsers = async (filters: IUserFilters) => {
   };
 };
 
+const updateDriverLicense = async (
+  userId: string,
+  licenseFrontSide?: string,
+  licenseBackSide?: string
+) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new ApiError(404, "User not found");
+
+  const updatedUser = await prisma.user.update({
+    where: { id: userId },
+    data: {
+      licenseFrontSide: licenseFrontSide || user.licenseFrontSide,
+      licenseBackSide: licenseBackSide || user.licenseBackSide,
+      updatedAt: new Date(),
+    },
+  });
+
+  return updatedUser;
+};
+
 
 const updateUserProfile = async (
   userId: string,
@@ -275,7 +295,49 @@ const updateUserProfile = async (
 // }
 
 // Fetch all drivers pending admin approval
-const getDriversPendingApproval = async () => {
+
+// const getDriversPendingApproval = async () => {
+//   const drivers = await prisma.user.findMany({
+//     where: {
+//       role: "DRIVER",
+//       adminApprovedStatus: "PENDING",
+//     },
+//     select: {
+//       id: true,
+//       fullName: true,
+//       phoneNumber: true,
+//       createdAt: true,
+//       role: true,
+//       adminApprovedStatus: true,
+//     },
+//   });
+
+//   if (!drivers.length) {
+//     throw new ApiError(httpStatus.NOT_FOUND, "No drivers pending approval");
+//   }
+
+//   return drivers;
+// };
+
+// Update driver approval status
+
+
+// Get all drivers with adminApprovedStatus = PENDING (ADMIN ONLY)
+
+
+const getDriversPendingApproval = async (userToken: string) => {
+  // Verify admin token
+  const decoded = jwtHelpers.verifyToken(userToken, process.env.JWT_SECRET!);
+
+  const currentUser = await prisma.user.findUnique({
+    where: { id: decoded.id },
+  });
+
+  if (!currentUser || currentUser.role !== "ADMIN") {
+    throw new ApiError(httpStatus.FORBIDDEN, "You are not authorized");
+  }
+
+  // Now fetch only pending drivers
   const drivers = await prisma.user.findMany({
     where: {
       role: "DRIVER",
@@ -298,7 +360,7 @@ const getDriversPendingApproval = async () => {
   return drivers;
 };
 
-// Update driver approval status
+
 const updateDriverApprovalStatus = async (
   userToken: string,
   userId: string,
@@ -335,6 +397,7 @@ export const userService = {
   createUserIntoDb,
   getMyProfile,
   getAllUsers,
+  updateDriverLicense,
   updateUserProfile,
   updateDriverApprovalStatus,
   getDriversPendingApproval,
