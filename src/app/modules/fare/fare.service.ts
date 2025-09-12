@@ -2,6 +2,7 @@
 import httpStatus from "http-status";
 import prisma from "../../../shared/prisma";
 import ApiError from "../../../errors/ApiErrors";
+import { get } from "lodash";
 
 
 const getCurrentFare = async () => {
@@ -15,17 +16,17 @@ const getCurrentFare = async () => {
 
   return fare;
 };
-// const getAllFare = async () => {
-//   const fare = await prisma.fare.findMany();
+const getAllFare = async () => {
+  const fare = await prisma.fare.findMany();
 
-//   if (!fare) {
-//     throw new ApiError(httpStatus.NOT_FOUND, "No active fare found");
-//   }
+  if (!fare) {
+    throw new ApiError(httpStatus.NOT_FOUND, "No active fare found");
+  }
 
-//   return fare;
-// };
+  return fare;
+};
 
-const createFare = async (fareData: { baseFare: number; costPerKm: number }) => {
+const createFare = async (fareData: { baseFare: number; costPerKm: number;costPerMin:number, minimumFare: number; waitingPerMin: number }) => {
   // Deactivate all existing fares
   await prisma.fare.updateMany({
     where: { isActive: true },
@@ -37,6 +38,9 @@ const createFare = async (fareData: { baseFare: number; costPerKm: number }) => 
     data: {
       baseFare: fareData.baseFare,
       costPerKm: fareData.costPerKm,
+      costPerMin:fareData.costPerMin,
+      minimumFare:fareData.minimumFare,
+      waitingPerMin:fareData.waitingPerMin,
       isActive: true,
       // carTransport: {
       //   // Replace 'connect' with the appropriate way to link or create CarTransport
@@ -81,6 +85,7 @@ const getFareHistory = async () => {
 
 export const fareService = {
   getCurrentFare,
+  getAllFare,
   createFare,
   updateFare,
   getFareHistory,

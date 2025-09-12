@@ -21,14 +21,14 @@ const getCurrentFare = catchAsync(async (req, res) => {
   });
 });
 
-// const getALlFare = catchAsync(async (req, res) => {
-//   const fares = await fareService.getAllFare();
-//   res.status(httpStatus.OK).send({
-//     success: true,
-//     message: "All fare retrieved successfully",
-//     data: fares,
-//   });
-// });
+const getAllFare = catchAsync(async (req, res) => {
+  const fares = await fareService.getAllFare();
+  res.status(httpStatus.OK).send({
+    success: true,
+    message: "All fare retrieved successfully",
+    data: fares,
+  });
+});
 
 const updateFare = catchAsync(async (req, res) => {
   const fare = await fareService.updateFare(req.params.fareId, req.body);
@@ -51,6 +51,7 @@ const getFareHistory = catchAsync(async (req, res) => {
 export const fareController = {
   getCurrentFare,
   createFare,
+  getAllFare,
   updateFare,
   getFareHistory,
 

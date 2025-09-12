@@ -7,7 +7,7 @@ import { fareValidation } from './fare.validation';
 const router = express.Router();
 
 // ✅ Current active fare
-// router.get("/",auth("ADMIN"), fareController.getALlFare);
+router.get("/",auth("ADMIN"), fareController.getAllFare);
 
 router.get("/current", fareController.getCurrentFare);
 // ✅ Create new fare

@@ -3,6 +3,8 @@ import { AuthRoutes } from "../modules/Auth/auth.routes";
 import { userRoutes } from "../modules/User/user.route";
 import { vehicleRoutes } from "../modules/vehicle/vehicle.routes";
 import { fareRoutes } from "../modules/fare/fare.routes";
+import path from "path";
+import { carTransportRoutes } from "../modules/carTransport/carTransport.routes";
 
 
 
@@ -26,6 +28,16 @@ const moduleRoutes = [
     path: "/fares",
     route: fareRoutes,
   },
+
+  {
+    path: "/vehicles",
+    route: vehicleRoutes,
+  },
+
+  {
+    path: "/carTransports",
+    route: carTransportRoutes,
+  }
 
   // {
   //   path: "/chats",

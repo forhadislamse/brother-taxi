@@ -11,7 +11,7 @@ enum UserRole {
   ADMIN
   RIDER
   DRIVER
-  PENDING
+  // PENDING
 }
 
 enum AdminApprovedStatus {
@@ -318,14 +318,17 @@ model Vehicle {
 }
 
 model Fare {
-  id             String       @id @default(auto()) @map("_id") @db.ObjectId
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
   // carTransportId String       @db.ObjectId
   // carTransport   CarTransport @relation(fields: [carTransportId], references: [id], onDelete: Cascade)
-  baseFare       Float
-  costPerKm      Float
-  isActive       Boolean      @default(true)
-  createdAt      DateTime     @default(now())
-  updatedAt      DateTime     @updatedAt
+  baseFare      Float?
+  costPerKm     Float
+  costPerMin    Float?
+  minimumFare   Float?
+  waitingPerMin Float?
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
   @@map("fares")
 }
