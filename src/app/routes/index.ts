@@ -5,6 +5,7 @@ import { vehicleRoutes } from "../modules/vehicle/vehicle.routes";
 import { fareRoutes } from "../modules/fare/fare.routes";
 import path from "path";
 import { carTransportRoutes } from "../modules/carTransport/carTransport.routes";
+import { estimateFareRoutes } from "../modules/estimateFare/estimateFare.routes";
 
 
 
@@ -30,13 +31,17 @@ const moduleRoutes = [
   },
 
   {
-    path: "/vehicles",
+    path: "/vehicle",
     route: vehicleRoutes,
   },
 
   {
     path: "/carTransports",
     route: carTransportRoutes,
+  },
+  {
+    path: "/estimateFares",
+    route: estimateFareRoutes,
   }
 
   // {

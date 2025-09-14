@@ -40,6 +40,19 @@ enum Gender {
   OTHER
 }
 
+enum TransportStatus {
+  ONGOING
+  PENDING
+  COMPLETED
+  CANCELLED
+}
+
+enum PaymentStatus {
+  PENDING
+  SUCCESS
+  FAILED
+}
+
 // model User {
 //   // ───── Identity
 //   id           String  @id @default(auto()) @map("_id") @db.ObjectId
@@ -159,6 +172,7 @@ model User {
   reviewsGiven    Review[]       @relation("ReviewsGiven")
   reviewsReceived Review[]       @relation("ReviewsReceived")
   // wallet          Wallet?
+  estimateFares  EstimateFare[]
   vehicles        Vehicle[]
   carTransports   CarTransport[]
   parcelDriver    CarTransport[] @relation("ParcelDriver")
@@ -221,6 +235,8 @@ model CarTransport {
   // ───── Scheduling
   pickupDate String? @default("")
   pickupTime String? @default("")
+  rideTime   String? @default("")
+  waitingTime String? @default("")
 
   // ───── Status Tracking
   status                  TransportStatus @default(PENDING)
@@ -260,19 +276,32 @@ model CarTransport {
   @@map("carTransports")
 }
 
-// Enums
-enum TransportStatus {
-  ONGOING
-  PENDING
-  COMPLETED
-  CANCELLED
+model EstimateFare {
+  id         String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId     String   @db.ObjectId
+  pickupLat  Float
+  pickupLng  Float
+  dropOffLat Float
+  dropOffLng Float
+  distance   Float
+  totalFare  Float
+  baseFare      Float
+  costPerKm     Float
+  costPerMin    Float
+  minimumFare   Float
+  waitingPerMin Float
+  isActive      Boolean  @default(true)
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("estimateFares")
 }
 
-enum PaymentStatus {
-  PENDING
-  SUCCESS
-  FAILED
-}
+
+// Enums
+
 
 // enum ServiceType {
 //   Airport_pickup

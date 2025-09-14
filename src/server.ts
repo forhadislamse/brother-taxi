@@ -2,7 +2,8 @@ import { Server } from "http";
 import config from "./config";
 
 import app from "./app";
-// import { setupWebSocket } from "./helpars/websocketSetUp";
+import { setupWebSocket } from "./shared/websocket";
+
 
 let server: Server;
 
@@ -10,7 +11,7 @@ async function startServer() {
   server = app.listen(config.port, () => {
     console.log("Server is listiening on port ", config.port);
   });
-  // await setupWebSocket(server);
+  await setupWebSocket(server);
 }
 
 async function main() {
