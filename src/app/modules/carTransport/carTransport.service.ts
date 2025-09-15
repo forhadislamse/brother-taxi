@@ -6,6 +6,11 @@ import prisma from "../../../shared/prisma";
 import ApiError from "../../../errors/ApiErrors";
 import { calculateDistance } from "../../../shared/calculateDistance";
 import { findNearbyDrivers } from "../../../shared/findNearByDrivers";
+import { CarTransport, PaymentStatus, Prisma, TransportStatus, UserRole } from "@prisma/client";
+import { paginationHelper } from "../../../helpars/paginationHelper";
+import { IGenericResponse } from "../vehicle/vehicle.interface";
+import { IPaginationOptions } from "../../../interfaces/paginations";
+import { IAssignDriverReq, ICarTransportFilters, IConfirmArrivalReq, IDriverResponseReq } from "./carTransport.interface";
 
 // async function calculateFareFromConfig(distance: number) {
 //   const activeFare = await prisma.fare.findFirst({
@@ -342,8 +347,590 @@ const createCarTransport = async (token: string, payload: any, files: any[]) => 
   };
 };
 
+
+const cancelRide = async (userId: string, rideId: string, cancelReason: string) => {
+  const ride = await prisma.carTransport.findUnique({ where: { id: rideId } });
+
+  if (!ride) throw new ApiError(httpStatus.NOT_FOUND, "Ride not found");
+  if (ride.userId !== userId)
+    throw new ApiError(httpStatus.FORBIDDEN, "You cannot cancel this ride");
+
+  return await prisma.carTransport.update({
+    where: { id: rideId },
+    data: {
+      status: "CANCELLED",
+      cancelReason,
+    },
+  });
+}
+
+const getRideDetailsById = async (rideId: string, ) => {
+  const ride = await prisma.carTransport.findUnique({
+    where: { id: rideId },
+    include: {
+      driver: {
+        select: {
+          id: true,
+          fullName: true,
+          phoneNumber: true,
+          profileImage: true,
+        },
+      },
+      vehicle: {
+        select: {
+          id: true,
+          manufacturer: true,
+          model: true,
+          licensePlateNumber: true,
+          bh: true,
+          refferalCode: true,
+          image: true,
+          color: true,
+          driver: { // vehicle এর driver info
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phoneNumber: true,
+              profileImage: true,
+              location: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  if (!ride) {
+    return null;
+  }
+
+  // // Ensure the user can only access their own ride details
+  // if (ride.userId !== userId) {
+  //   throw new ApiError(httpStatus.FORBIDDEN, "You do not have access to this ride");
+  // }
+
+  return ride;
+}   
+
+
+const getMyRides = async (userId: string) => {
+  // প্রথমে ride গুলো fetch করো
+  const rides = await prisma.carTransport.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    include: {
+            user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          profileImage: true,
+          location: true,
+          lat: true,
+          lng: true,
+        },
+      },
+      vehicle: {
+        select: {
+          id: true,
+          manufacturer: true,
+          model: true,
+          licensePlateNumber: true,
+          bh: true,
+          refferalCode: true,
+          image: true,
+          color: true,
+          driver: { // vehicle এর driver info
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phoneNumber: true,
+              profileImage: true,
+              location: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  // প্রতিটি ride-এর জন্য nearby drivers calculate করো
+  const ridesWithNearby = await Promise.all(
+    rides.map(async (ride) => {
+      let nearbyDrivers: any[] = [];
+
+      if (ride.pickupLat && ride.pickupLng) {
+        const drivers = await findNearbyDrivers(ride.pickupLat, ride.pickupLng);
+        nearbyDrivers = drivers.map((driver) => ({
+          id: driver.id,
+          fullName: driver.fullName,
+          phone: driver.phone,
+          profileImage: driver.profileImage,
+          lat: driver.lat,
+          lng: driver.lng,
+          distance: calculateDistance(ride.pickupLat!, ride.pickupLng!, driver.lat!, driver.lng!),
+        }));
+      }
+
+      return {
+        ...ride,
+        nearbyDrivers,
+      };
+    })
+  );
+
+  return ridesWithNearby;
+};
+
+// src/app/modules/carTransport/carTransport.service.ts
+
+const getAllCarTransports = async (
+  filters: ICarTransportFilters,
+  options: IPaginationOptions
+): Promise<IGenericResponse<CarTransport[]>> => {
+  const { searchTerm, status, paymentStatus, ...filterData } =
+    filters;
+  const { page, limit, skip, sortBy, sortOrder } =
+    paginationHelper.calculatePagination(options);
+
+  const andConditions: Prisma.CarTransportWhereInput[] = [];
+
+  if (searchTerm) {
+    andConditions.push({
+      OR: [
+        {
+          pickupLocation: {
+            contains: searchTerm,
+            mode: Prisma.QueryMode.insensitive,
+          },
+        },
+        {
+          dropOffLocation: {
+            contains: searchTerm,
+            mode: Prisma.QueryMode.insensitive,
+          },
+        },
+      ],
+    });
+  }
+
+  if (status) {
+    andConditions.push({
+      status: status as TransportStatus,
+    });
+  }
+
+  // if (serviceType) {
+  //   andConditions.push({
+  //     serviceType: serviceType as ServiceType,
+  //   });
+  // }
+
+  if (paymentStatus) {
+    andConditions.push({
+      paymentStatus: paymentStatus as PaymentStatus,
+    });
+  }
+
+  if (Object.keys(filterData).length > 0) {
+    andConditions.push({
+      AND: Object.keys(filterData).map((key) => ({
+        [key]: {
+          equals: (filterData as any)[key],
+        },
+      })),
+    });
+  }
+
+  const whereConditions: Prisma.CarTransportWhereInput =
+    andConditions.length > 0 ? { AND: andConditions } : {};
+
+  const result = await prisma.carTransport.findMany({
+    where: whereConditions,
+    include: {
+     user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          phoneNumber: true,
+          profileImage: true,
+          location: true,
+          lat: true,
+          lng: true,
+        },
+      },
+       vehicle: {
+        select: {
+          id: true,
+          manufacturer: true,
+          model: true,
+          licensePlateNumber: true,
+          bh: true,
+          refferalCode: true,
+          image: true,
+          color: true,
+          driver: { // vehicle এর driver info
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phoneNumber: true,
+              profileImage: true,
+              location: true,
+            },
+          },
+        },
+      },
+    },
+    skip,
+    take: limit,
+    orderBy: {
+      [sortBy]: sortOrder,
+    },
+  });
+
+  const total = await prisma.carTransport.count({
+    where: whereConditions,
+  });
+
+  return {
+    meta: {
+      page,
+      limit,
+      total,
+    },
+    data: result,
+  };
+};
+
+const getRideStatusById = async (
+  id: string
+) => {
+  const result = await prisma.carTransport.findUnique({
+    where: {
+      id,
+    },
+
+    select: {
+      arrivalConfirmation: true,             
+      journeyStarted: true,
+      journeyCompleted: true,
+    },
+    // include: {
+    //   user: {
+    //     select: {
+    //       id: true,
+    //       fullName: true,
+    //       email: true,
+    //       profileImage: true,
+    //       location: true,
+    //       lat: true,
+    //       lng: true,
+    //     },
+    //   },
+    //   vehicle: true,
+    // },
+  });
+
+  return result;
+};
+
+// const assignDriver = async (payload: IAssignDriverReq) => {
+//   const { carTransportId, driverId } = payload;
+
+//   // Check if car transport exists
+//   const transport = await prisma.carTransport.findUnique({
+//     where: { id: carTransportId },
+//   });
+
+//   if (!transport) {
+//     throw new ApiError(httpStatus.NOT_FOUND, "Car transport request not found");
+//   }
+
+//   // Check if driver exists and is active
+//   const driver = await prisma.user.findFirst({
+//     where: {
+//       id: driverId,
+//       role: UserRole.DRIVER,
+//       status: "ACTIVE",
+//     },
+//   });
+
+//   if (!driver) {
+//     throw new ApiError(httpStatus.NOT_FOUND, "Driver not found or not active");
+//   }
+
+//   // Update car transport with assigned driver
+//   const result = await prisma.carTransport.update({
+//     where: { id: carTransportId },
+//     data: {
+//       assignedDriver: driverId,
+//       assignedDriverReqStatus: "PENDING",
+//       isDriverReqCancel: false,
+//     },
+//     include: {
+//       user: {
+//         select: {
+//           id: true,
+//           fullName: true,
+//           email: true,
+//           profileImage: true,
+//           location: true,
+//           lat: true,
+//           lng: true,
+//         },
+//       },
+//       vehicle: true,
+//     },
+//   });
+
+//   return result;
+// };
+
+const assignDriver = async (payload: IAssignDriverReq) => {
+  const { carTransportId, driverId } = payload;
+
+  const transport = await prisma.carTransport.findUnique({
+    where: { id: carTransportId },
+  });
+  if (!transport) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Car transport request not found");
+  }
+
+  const driver = await prisma.user.findFirst({
+    where: {
+      id: driverId,
+      role: UserRole.DRIVER,
+      status: "ACTIVE",
+      adminApprovedStatus: "APPROVED", // ✅ new condition
+    },
+  });
+  if (!driver) {
+    throw new ApiError(
+      httpStatus.NOT_FOUND,
+      "Driver not found, not active, or not admin approved"
+    );
+  }
+
+  const result = await prisma.carTransport.update({
+    where: { id: carTransportId },
+    data: {
+      assignedDriver: driverId,
+      assignedDriverReqStatus: "PENDING",
+      isDriverReqCancel: false,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          profileImage: true,
+          location: true,
+          lat: true,
+          lng: true,
+        },
+      },
+      vehicle: {
+        select: {
+          id: true,
+          manufacturer: true,
+          model: true,
+          licensePlateNumber: true,
+          bh: true,
+          refferalCode: true,
+          image: true,
+          color: true,
+          driver: { // vehicle এর driver info
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phoneNumber: true,
+              profileImage: true,
+              location: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return result;
+};
+
+
+const handleDriverResponse = async (
+  userToken: string,
+  payload: IDriverResponseReq
+) => {
+  const { carTransportId, response } = payload;
+
+  // ✅ Verify the driver from token
+  const decodedToken = jwtHelpers.verifyToken(
+    userToken,
+    config.jwt.jwt_secret!
+  );
+
+  // ✅ Check if car transport is assigned to this driver
+  const transport = await prisma.carTransport.findFirst({
+    where: {
+      id: carTransportId,
+      assignedDriver: decodedToken.id,
+    },
+  });
+
+  if (!transport) {
+    throw new ApiError(
+      httpStatus.NOT_FOUND,
+      "Car transport request not found or not assigned to you"
+    );
+  }
+
+  if (transport.assignedDriverReqStatus !== "PENDING") {
+    throw new ApiError(
+      httpStatus.BAD_REQUEST,
+      "You have already responded to this request"
+    );
+  }
+
+  // ✅ Update transport based on driver's response
+  const result = await prisma.carTransport.update({
+    where: { id: carTransportId },
+    data: {
+      assignedDriverReqStatus: response, // ACCEPTED / DECLINED
+      isDriverReqCancel: response === "DECLINED",
+      status:
+        response === "ACCEPTED"
+          ? TransportStatus.ONGOING
+          : TransportStatus.PENDING,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          profileImage: true,
+          location: true,
+          lat: true,
+          lng: true,
+        },
+      },
+      vehicle: {
+        select: {
+          id: true,
+          manufacturer: true,
+          model: true,
+          licensePlateNumber: true,
+          bh: true,
+          refferalCode: true,
+          image: true,
+          color: true,
+          driver: { // vehicle এর driver info
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phoneNumber: true,
+              profileImage: true,
+              location: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return result;
+};
+
+const confirmArrival = async (
+  userToken: string,
+  payload: IConfirmArrivalReq
+) => {
+  const decodedToken = jwtHelpers.verifyToken(
+    userToken,
+    config.jwt.jwt_secret!
+  );
+  const { carTransportId } = payload;
+
+  // Check if transport exists and is assigned to this driver
+  const transport = await prisma.carTransport.findFirst({
+    where: {
+      id: carTransportId,
+      assignedDriver: decodedToken.id,
+      assignedDriverReqStatus: "ACCEPTED",
+      arrivalConfirmation: false,
+    },
+  });
+
+  if (!transport) {
+    throw new ApiError(
+      httpStatus.NOT_FOUND,
+      "Car transport request not found or not eligible for arrival confirmation"
+    );
+  }
+
+  const result = await prisma.carTransport.update({
+    where: { id: carTransportId },
+    data: {
+      arrivalConfirmation: true,
+    },
+    include: {
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          profileImage: true,
+          location: true,
+          lat: true,
+          lng: true,
+        },
+      },
+      vehicle: {
+        select: {
+          id: true,
+          manufacturer: true,
+          model: true,
+          licensePlateNumber: true,
+          bh: true,
+          refferalCode: true,
+          image: true,
+          color: true,
+          driver: { // vehicle এর driver info
+            select: {
+              id: true,
+              fullName: true,
+              email: true,
+              phoneNumber: true,
+              profileImage: true,
+              location: true,
+            },
+          },
+        },
+      },
+    },
+  });
+
+  return result;
+};
+
+
 export const carTransportService = {
   createCarTransport,
+  cancelRide,
+  getRideDetailsById,
+  getMyRides,
+  getAllCarTransports,
+  getRideStatusById,
+  assignDriver,
+  handleDriverResponse,
+  confirmArrival,
   // getListFromDb,
   // getByIdFromDb,
   // updateIntoDb,

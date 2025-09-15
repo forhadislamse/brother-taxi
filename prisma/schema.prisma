@@ -49,8 +49,29 @@ enum TransportStatus {
 
 enum PaymentStatus {
   PENDING
-  SUCCESS
   FAILED
+  COMPLETED
+  REFUNDED
+  REQUIRES_CAPTURE
+}
+
+enum PaymentMethod {
+  CASH
+  CARD
+  WALLET
+}
+
+enum FeeType {
+  FIXED
+  PERCENTAGE
+}
+
+enum NotificationType {
+  ORDER_STATUS
+  PAYMENT_STATUS
+  VEHICLE_STATUS
+  GENERAL
+  PAYMENT
 }
 
 // model User {
@@ -163,20 +184,25 @@ model User {
   totalDistance Float? @default(0)
   totalRides    Int?   @default(0)
   totalTrips    Int?   @default(0)
+  averageRating    Float?               @default(0)
+  reviewCount      Int?                 @default(0)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
-
-  // ridesAsRider    Ride[]   @relation("RiderRides")
-  // ridesAsDriver   Ride[]   @relation("DriverRides")
-  reviewsGiven    Review[]       @relation("ReviewsGiven")
-  reviewsReceived Review[]       @relation("ReviewsReceived")
-  // wallet          Wallet?
+  notifications  Notification[]
+  reviewsWritten   Review[]             @relation("UserReview")
+  reviewsReceived  Review[]             @relation("DriverReview")
   estimateFares  EstimateFare[]
   vehicles        Vehicle[]
   carTransports   CarTransport[]
-  parcelDriver    CarTransport[] @relation("ParcelDriver")
-  parcelSender    CarTransport[] @relation("ParcelSender")
+  Chat            Chat[]         @relation("SenderChat")
+  Message         Message[]
+  driverChats      Chat[]         @relation("DriverChat")
+  Driver    CarTransport[] @relation("Driver")
+  Sender    CarTransport[] @relation("Sender")
+   paymentsSent     Payment[]            @relation("PaymentSender")
+  paymentsReceived Payment[]            @relation("PaymentReceiver")
+  savedCards       SavedCard[]
 
   @@map("users")
 }
@@ -265,15 +291,97 @@ model CarTransport {
   // ───── Relations
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  driver  User?   @relation("ParcelDriver", fields: [assignedDriver], references: [id], onDelete: Cascade)
-  sender  User?   @relation("ParcelSender", fields: [userId], references: [id], onDelete: Cascade)
+  driver  User?   @relation("Driver", fields: [assignedDriver], references: [id], onDelete: Cascade)
+  sender  User?   @relation("Sender", fields: [userId], references: [id], onDelete: Cascade)
 
   Review Review[] // ride feedback
   // fare   Fare[]
-  // ParcelChat ParcelChat[]    // chat between rider and driver
-  // Payment    Payment[]       @relation("carTransportPayment") // multiple payments if needed
+  Chat Chat[]    // chat between rider and driver
+  Payment    Payment[]       @relation("carTransportPayment") // multiple payments if needed
 
   @@map("carTransports")
+}
+
+model Chat {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  carTransportId String   @db.ObjectId
+  senderId       String   @db.ObjectId
+  driverId       String   @db.ObjectId
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  carTransport CarTransport @relation(fields: [carTransportId], references: [id], onDelete: Cascade)
+  sender       User         @relation("SenderChat", fields: [senderId], references: [id], onDelete: Cascade)
+  driver       User         @relation("DriverChat", fields: [driverId], references: [id], onDelete: Cascade)
+
+  messages Message[]
+
+  @@map("chats")
+}
+
+model Message {
+  id           String   @id @default(auto()) @map("_id") @db.ObjectId
+  ChatId String   @db.ObjectId
+  senderId     String   @db.ObjectId
+  message      String?
+  images       String[] @default([])
+  isRead       Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  Chat Chat @relation(fields: [ChatId], references: [id], onDelete: Cascade)
+  sender     User       @relation(fields: [senderId], references: [id], onDelete: Cascade)
+
+  @@map("messages")
+}
+
+
+
+model Payment {
+  id                          String        @id @default(auto()) @map("_id") @db.ObjectId
+  paymentId                   String // Stripe payment intent ID or custom ID for cash
+  transportId                 String?       @db.ObjectId
+  senderId                    String?       @db.ObjectId
+  receiverId                  String?       @db.ObjectId
+  amount                      Float
+  platformFee                 Float
+  driverFee                   Float?
+  platformFeeType             FeeType       @default(PERCENTAGE)
+  paymentMethod               PaymentMethod @default(CARD)
+  paymentStatus               PaymentStatus @default(PENDING)
+  stripePaymentIntentId       String?
+  stripePlatformFeeTransferId String?
+  stripeDriverTransferId      String?
+  refundId                    String?
+  metadata                    Json?
+  isHold                      Boolean       @default(false)
+  holdReleaseDate             DateTime?
+  paymentDate                 DateTime?     @default(now())
+  createdAt                   DateTime      @default(now())
+  updatedAt                   DateTime      @updatedAt
+
+  sender       User?         @relation("PaymentSender", fields: [senderId], references: [id], onDelete: Cascade)
+  receiver     User?         @relation("PaymentReceiver", fields: [receiverId], references: [id], onDelete: Cascade)
+  carTransport CarTransport? @relation("carTransportPayment", fields: [transportId], references: [id], onDelete: Cascade)
+
+  @@map("payments")
+}
+
+model SavedCard {
+  id                    String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId                String   @db.ObjectId
+  cardType              String
+  last4                 String
+  expiryMonth           Int
+  expiryYear            Int
+  isDefault             Boolean  @default(false)
+  stripePaymentMethodId String
+  createdAt             DateTime @default(now())
+  updatedAt             DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@map("saved_cards")
 }
 
 model EstimateFare {
@@ -310,20 +418,43 @@ model EstimateFare {
 //   Parcel_delivery
 // }
 
-model Review {
-  id         String       @id @default(auto()) @map("_id") @db.ObjectId
-  rating     Int // 1-5 stars
-  comment    String?
-  reviewerId String       @db.ObjectId
-  reviewedId String       @db.ObjectId
-  rideId     String       @db.ObjectId
-  reviewer   User         @relation("ReviewsGiven", fields: [reviewerId], references: [id])
-  reviewed   User         @relation("ReviewsReceived", fields: [reviewedId], references: [id])
-  ride       CarTransport @relation(fields: [rideId], references: [id])
-  createdAt  DateTime     @default(now())
+model Notification {
+  id        String           @id @default(auto()) @map("_id") @db.ObjectId
+  userId    String           @db.ObjectId
+  title     String
+  body      String
+  type      NotificationType @default(GENERAL)
+  data      String?
+  targetId  String?          @default("")
+  slug      String?          @default("")
+  fcmToken  String?          @default("")
+  read      Boolean          @default(false)
+  createdAt DateTime         @default(now())
+  updatedAt DateTime         @updatedAt
+  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
 
+  @@map("notifications")
+}
+
+model Review {
+  id             String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId         String   @db.ObjectId
+  driverId       String   @db.ObjectId
+  carTransportId String   @db.ObjectId
+  rating         Int      @default(0)
+  comment        String?
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  user         User         @relation("UserReview", fields: [userId], references: [id], onDelete: Cascade)
+  driver       User         @relation("DriverReview", fields: [driverId], references: [id], onDelete: Cascade)
+  carTransport CarTransport @relation(fields: [carTransportId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, carTransportId])
   @@map("reviews")
 }
+
 
 model Vehicle {
   id                 String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -333,7 +464,7 @@ model Vehicle {
   year               Int
   image              String?
   color              String
-  licensePlateNumber String   @unique
+  licensePlateNumber String   
   isActive           Boolean  @default(true)
   bh                 String // same as your schema
   refferalCode       String
