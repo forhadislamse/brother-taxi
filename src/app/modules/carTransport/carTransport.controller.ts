@@ -63,9 +63,25 @@ const getRideDetailsById = catchAsync(async (req, res) => {
   });
 });
 
+// const getMyRidesCount = catchAsync(async (req, res) => {
+//   const userId = req.user.id;
+//   const role = req.user.role;
+
+//   const stats = await carTransportService.getMyRidesCount(userId,role);
+
+//   sendResponse(res, {
+//     statusCode: 200,
+//     success: true,
+//     message: "Total rides fetched successfully",
+//     data: stats,
+//   });
+// });
+
+
 // Get my rides (Rider side)
 const getMyRides = catchAsync(async (req, res) => {
   const userId = req.user.id;
+
   const rides = await carTransportService.getMyRides(userId);
 
   sendResponse(res, {
@@ -76,7 +92,23 @@ const getMyRides = catchAsync(async (req, res) => {
   });
 });
 
-// src/app/modules/carTransport/carTransport.controller.ts
+
+const getMyStatsController = catchAsync(async (req, res) => {
+  const userId = req.user.id;
+  const role = req.user.role;
+
+  const stats = await carTransportService.getMyRidesOrTripsCount(userId, role);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Ride/Trip stats fetched successfully",
+    data: stats,
+  });
+});
+
+
+
 
 const getAllCarTransports = catchAsync(async (req, res) => {
   const filters = pick(req.query, [
@@ -152,17 +184,53 @@ const confirmArrival = catchAsync(async (req, res) => {
   });
 });
 
+const startJourney = catchAsync(async (req, res) => {
+  const token = req.headers.authorization;
+  const result = await carTransportService.startJourney(
+    token as string,
+    req.body
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Journey started successfully",
+    data: result,
+  });
+});
+
+const completeJourney = catchAsync(async (req, res) => {
+  const token = req.headers.authorization;
+  // const files = req.files as any[];
+
+  const result = await carTransportService.completeJourney(
+    token as string,
+    req.body,
+    // files || []
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Journey completed successfully",
+    data: result,
+  });
+});
+
 
 export const carTransportController = {
   createCarTransport,
   cancelRide,
   getRideDetailsById,
   getMyRides,
+  getMyStatsController,
   getAllCarTransports,
   getRideStatusById,
   assignDriver,
   handleDriverResponse,
   confirmArrival,
+  startJourney,
+  completeJourney,
   // getCarTransportList,
   // getCarTransportById,
   // updateCarTransport,

@@ -1,20 +1,19 @@
-import express from 'express';
-import auth from '../../middlewares/auth';
-import validateRequest from '../../middlewares/validateRequest';
-import { carTransportController } from './carTransport.controller';
-import { carTransportValidation } from './carTransport.validation';
-import { USER_ROLE } from '../../../enums/enums';
-import { fileUploader } from '../../../helpars/fileUploader';
+import express from "express";
+import auth from "../../middlewares/auth";
+import validateRequest from "../../middlewares/validateRequest";
+import { carTransportController } from "./carTransport.controller";
+import { carTransportValidation } from "./carTransport.validation";
+import { USER_ROLE } from "../../../enums/enums";
+import { fileUploader } from "../../../helpars/fileUploader";
 
 const router = express.Router();
 
 router.post(
   "/create",
   auth(USER_ROLE.RIDER),
-  fileUploader.upload.array('images', 5),
+  fileUploader.upload.array("images", 5),
   carTransportController.createCarTransport
 );
-
 
 router.get(
   "/all",
@@ -22,21 +21,17 @@ router.get(
   carTransportController.getAllCarTransports
 );
 
-
 // Rider get all my rides
-router.get(
-  "/my-rides",
-  auth(),
-  carTransportController.getMyRides
-);
+router.get("/my-rides", auth(), carTransportController.getMyRides);
+
+// Rider এর total rides count fetch করার route
+router.get("/my-rides/count", auth(), carTransportController.getMyStatsController);
 
 router.get(
   "/ride-status/:id",
   auth(),
   carTransportController.getRideStatusById
 );
-
-
 
 // Rider cancel ride
 router.patch(
@@ -46,8 +41,11 @@ router.patch(
 );
 
 // GET ride details by ID
-router.get('/:id', auth(USER_ROLE.DRIVER,USER_ROLE.RIDER), carTransportController.getRideDetailsById);
-
+router.get(
+  "/:id",
+  auth(USER_ROLE.DRIVER, USER_ROLE.RIDER),
+  carTransportController.getRideDetailsById
+);
 
 // Admin assigns driver to car transport
 router.patch(
@@ -56,20 +54,20 @@ router.patch(
   carTransportController.assignDriver
 );
 
-
-// Driver accepts or declines 
+// Driver accepts or declines
 router.patch(
   "/driver-response",
   auth(USER_ROLE.DRIVER), // শুধু driver access করতে পারবে
   carTransportController.handleDriverResponse
 );
 
-router.patch(
-  "/confirm-arrival",
-  auth(),
-  carTransportController.confirmArrival
-);
+router.patch("/confirm-arrival", auth(), carTransportController.confirmArrival);
 
+// Driver starts the journey
+router.patch("/start-ride", auth(), carTransportController.startJourney);
+
+// Driver completes the journey
+router.patch("/complete-ride", auth(), carTransportController.completeJourney);
 
 // router.get('/', auth(), carTransportController.getCarTransportList);
 

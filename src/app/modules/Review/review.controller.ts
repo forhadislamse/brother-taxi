@@ -1,47 +1,43 @@
-// import { Request, Response } from "express";
-// import catchAsync from "../../../shared/catchAsync";
-// import sendResponse from "../../../shared/sendResponse";
-// import httpStatus from "http-status";
-// import { reviewService } from "./review.service";
+import httpStatus from "http-status";
+import catchAsync from "../../../shared/catchAsync";
+import sendResponse from "../../../shared/sendResponse";
+import { reviewService } from "./review.service";
 
-//  const createReview = catchAsync(async (req: Request, res: Response) => {
+const createReview = catchAsync(async (req, res) => {
+  const result = await reviewService.createReview(
+    req.headers.authorization!,
+    req.body
+  );
+  sendResponse(res, {
+    statusCode: httpStatus.CREATED,
+    success: true,
+    message: "Review created successfully",
+    data: result,
+  });
+});
 
+const getMyReviews = catchAsync(async (req, res) => {
+  const result = await reviewService.getMyReviews(req.headers.authorization!);
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Get my reviews successfully",
+    data: result,
+  });
+});
 
-//   const studentId = req.user.id;
-//   const reviewData = req.body;
+const getFlaggedReviews = catchAsync(async (req, res) => {
+  const result = await reviewService.getFlaggedReviews();
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Admin: Only see bad reviews",
+    data: result,
+  });
+});
 
-//   if (!studentId) {
-//     return res
-//       .status(httpStatus.UNAUTHORIZED)
-//       .json({ message: "User not authenticated" });
-//   }
-
-//   const result = await reviewService.createReviewService(studentId, reviewData);
-
-//   console.log("result", result);
-
-//   sendResponse(res, {
-//     statusCode: httpStatus.CREATED,
-//     success: true,
-//     message: "Review created successfully!",
-//     data: result,
-//   });
-// });
-
-// //  const getReviewsByEvent = catchAsync(async (req: Request, res: Response) => {
-// //   const eventId = req.params.eventId;
-// //   const result = await reviewService.getTutorByIdService(eventId);
-
-// //   sendResponse(res, {
-// //     statusCode: httpStatus.OK,
-// //     success: true,
-// //     message: "Reviews fetched successfully!",
-// //     data: result,
-// //   });
-// // });
-
-
-// export const reviewController = {
-//   createReview,
-//   // getReviewsByEvent,
-// };
+export const reviewController = {
+  createReview,
+    getMyReviews,
+    getFlaggedReviews,
+};
