@@ -52,6 +52,17 @@ const getAllUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const adminDashboardUserLength = catchAsync(async (req: Request, res: Response) => {
+  const result = await userService.adminDashboardUserLength(); 
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "User lengths retrieved successfully",
+    data: result,
+  });
+});
+
 const uploadDriverLicense = catchAsync(async (req: Request, res: Response) => {
   const userId = req.user.id;
   const files = req.files as { [fieldname: string]: Express.Multer.File[] };
@@ -165,14 +176,51 @@ const updateDriverApprovalStatus = catchAsync(async (req: Request, res: Response
 //   });
 // }
 
+const toggleOnlineStatus = catchAsync(async (req: Request, res: Response) => {
+  const token = req.headers.authorization;
+  const { isUserOnline } = req.body;
+  
+  const result = await userService.toggleUserOnlineStatus(
+    token as string,
+    isUserOnline
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: `User is now ${isUserOnline ? 'online' : 'offline'}`,
+    data: result,
+  });
+});
+
+const toggleNotificationOnOff = catchAsync(async (req: Request, res: Response) => {
+  const token = req.headers.authorization;
+  const { isNotificationOn } = req.body;
+
+  const result = await userService.toggleNotificationOnOff(
+    token as string,
+    isNotificationOn
+  );
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: `User is now ${isNotificationOn ? 'online' : 'offline'}`,
+    data: result,
+  });
+});
+
 
 export const userController = {
   createUser,
   getMyProfile,
   getAllUser,
+  adminDashboardUserLength,
   uploadDriverLicense,
   updateProfileController,
   updateDriverApprovalStatus,
   getDriversPendingApproval,
+  toggleOnlineStatus,
+  toggleNotificationOnOff,
   // postDemoVideo
 };

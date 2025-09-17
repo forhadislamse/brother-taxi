@@ -10,22 +10,118 @@ import { IUser, IUserFilters } from "./user.interface";
 import { Secret } from "jsonwebtoken";
 import { generateOtp } from "../../../shared/getTransactionId";
 import { sendMessage } from "../../../shared/sendMessage";
-import { get } from "lodash";
+import { get, omit } from "lodash";
 
 
+
+
+// const createUserIntoDb = async (payload: User) => {
+//   // check existing user
+//   const existingUser = await prisma.user.findFirst({
+//     where: { phoneNumber: payload.phoneNumber },
+//   });
+
+//   if (existingUser) {
+//     if (existingUser.isPhoneNumberVerify === false) {
+//       // পুরানো unverified user মুছে ফেলবো
+//       await prisma.user.delete({
+//         where: { id: existingUser.id },
+//       });
+//     } else {
+//       throw new ApiError(
+//         httpStatus.BAD_REQUEST,
+//         `User with this phone number ${payload.phoneNumber} already exists`
+//       );
+//     }
+//   }
+
+//   // otp generate
+//   const otp = generateOtp(4);
+//   const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+//   // dynamic data prepare
+//   const data: any = {
+//     phoneNumber: payload.phoneNumber,
+//     role: payload.role,
+//     otp,
+//     otpExpiresAt: otpExpiry,
+//   };
+
+//   // optional email
+//   if (payload.email && payload.email.trim() !== "") {
+//     data.email = payload.email;
+//   }
+
+//   // optional password
+//   if (payload.password && payload.password.trim() !== "") {
+//     const hashedPassword = await bcrypt.hash(
+//       payload.password,
+//       Number(config.bcrypt_salt_rounds)
+//     );
+//     data.password = hashedPassword;
+//   }
+
+//   // user create
+//   const newUser = await prisma.user.create({
+//     data,
+//     select: {
+//       id: true,
+//       phoneNumber: true,
+//       role: true,
+//       email: true,
+//       otp: true,
+//       createdAt: true,
+//       updatedAt: true,
+//     },
+//   });
+
+//   console.log("✅ User created with phone:", payload.phoneNumber);
+
+//   // otp send
+//   try {
+//     const messageBody = `Here is your OTP code: ${otp}. It will expire in 5 minutes.`;
+//     await sendMessage(messageBody, payload.phoneNumber);
+//   } catch (error) {
+//     console.error("❌ Failed to send OTP:", error);
+//   }
+
+//   return newUser;
+// };
+
+
+
+// // get user profile
 
 
 const createUserIntoDb = async (payload: User) => {
   // check existing user
-  const existingUser = await prisma.user.findFirst({
+  let existingUser = await prisma.user.findFirst({
     where: { phoneNumber: payload.phoneNumber },
   });
 
+  // otp generate
+  const otp = generateOtp(4);
+  const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+  let user;
+
   if (existingUser) {
     if (existingUser.isPhoneNumberVerify === false) {
-      // পুরানো unverified user মুছে ফেলবো
-      await prisma.user.delete({
+      // পুরানো unverified user এর OTP update হবে
+      user = await prisma.user.update({
         where: { id: existingUser.id },
+        data: {
+          otp,
+          otpExpiresAt: otpExpiry,
+        },
+        select: {
+          id: true,
+          phoneNumber: true,
+          role: true,
+          otp: true,
+          createdAt: true,
+          updatedAt: true,
+        },
       });
     } else {
       throw new ApiError(
@@ -33,49 +129,27 @@ const createUserIntoDb = async (payload: User) => {
         `User with this phone number ${payload.phoneNumber} already exists`
       );
     }
+  } else {
+    // একদম নতুন user create
+    user = await prisma.user.create({
+      data: {
+        phoneNumber: payload.phoneNumber,
+        role: payload.role,
+        otp,
+        otpExpiresAt: otpExpiry,
+      },
+      select: {
+        id: true,
+        phoneNumber: true,
+        role: true,
+        otp: true,
+        createdAt: true,
+        updatedAt: true,
+      },
+    });
   }
 
-  // otp generate
-  const otp = generateOtp(4);
-  const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
-
-  // dynamic data prepare
-  const data: any = {
-    phoneNumber: payload.phoneNumber,
-    role: payload.role,
-    otp,
-    otpExpiresAt: otpExpiry,
-  };
-
-  // optional email
-  if (payload.email && payload.email.trim() !== "") {
-    data.email = payload.email;
-  }
-
-  // optional password
-  if (payload.password && payload.password.trim() !== "") {
-    const hashedPassword = await bcrypt.hash(
-      payload.password,
-      Number(config.bcrypt_salt_rounds)
-    );
-    data.password = hashedPassword;
-  }
-
-  // user create
-  const newUser = await prisma.user.create({
-    data,
-    select: {
-      id: true,
-      phoneNumber: true,
-      role: true,
-      email: true,
-      otp: true,
-      createdAt: true,
-      updatedAt: true,
-    },
-  });
-
-  console.log("✅ User created with phone:", payload.phoneNumber);
+  console.log("✅ User created/updated with phone:", payload.phoneNumber);
 
   // otp send
   try {
@@ -85,12 +159,10 @@ const createUserIntoDb = async (payload: User) => {
     console.error("❌ Failed to send OTP:", error);
   }
 
-  return newUser;
+  return user;
 };
 
 
-
-// // get user profile
 const getMyProfile = async (userToken: string) => {
   const decodedToken = jwtHelpers.verifyToken(
     userToken,
@@ -175,6 +247,35 @@ const getAllUsers = async (filters: IUserFilters) => {
       totalPage: Math.ceil(total / limit),
     },
     data: users,
+  };
+};
+
+//get all users length for admin dashboard
+const adminDashboardUserLength = async () => {
+  const totalRiders = await prisma.user.count({
+    where: {
+      role: "RIDER",
+    },
+  });
+  // const totalDrivers = await prisma.user.count({
+  //   where: {
+  //     NOT: {
+  //       role: {
+  //         in: ["ADMIN", "RIDER"], // Excluding Admin and User roles
+  //       },
+  //     },
+  //   },
+  // });
+  const totalDrivers = await prisma.user.count({
+    where: {
+      role: "DRIVER",
+      adminApprovedStatus: "APPROVED", // শুধু approved driver
+    },
+  });
+
+  return {
+    totalRiders,
+    totalDrivers,
   };
 };
 
@@ -392,14 +493,89 @@ console.log(driver);
   return driverSafe;
 };
 
+// toggle user online status
+const toggleUserOnlineStatus = async (
+  userToken: string,
+  isUserOnline: boolean
+) => {
+  const decodedToken = jwtHelpers.verifyToken(
+    userToken,
+    config.jwt.jwt_secret!
+  );
+
+  const existingUser = await prisma.user.findUnique({
+    where: {
+      id: decodedToken.id,
+    },
+  });
+
+  if (!existingUser) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: decodedToken.id },
+    data: {
+      isUserOnline,
+    },
+    select: {
+      id: true,
+      isUserOnline: true,
+      updatedAt: true,
+    },
+  });
+
+  const userWithoutSensitive = omit(updatedUser, ["password", "fcmToken"]);
+  return userWithoutSensitive;
+};
+
+// toggle user online status
+const toggleNotificationOnOff = async (
+  userToken: string,
+  isNotificationOn: boolean
+) => {
+  const decodedToken = jwtHelpers.verifyToken(
+    userToken,
+    config.jwt.jwt_secret!
+  );
+
+  const existingUser = await prisma.user.findUnique({
+    where: {
+      id: decodedToken.id,
+    },
+  });
+
+  if (!existingUser) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  const updatedUser = await prisma.user.update({
+    where: { id: decodedToken.id },
+    data: {
+      isNotificationOn,
+    },
+    select: {
+      id: true,
+      isNotificationOn: true,
+      updatedAt: true,
+    },
+  });
+
+  const userWithoutSensitive = omit(updatedUser, ["password", "fcmToken"]);
+  return userWithoutSensitive;
+};
+
 
 export const userService = {
   createUserIntoDb,
   getMyProfile,
   getAllUsers,
+  adminDashboardUserLength,
   updateDriverLicense,
   updateUserProfile,
   updateDriverApprovalStatus,
   getDriversPendingApproval,
+  toggleUserOnlineStatus,
+  toggleNotificationOnOff,
   // postDemoVideo
 };

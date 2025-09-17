@@ -52,8 +52,24 @@ router.get("/drivers/pending", auth(), userController.getDriversPendingApproval)
 
 router.get("/all", auth(), userController.getAllUser);
 
+router.get("/all-user-length", auth(), userController.adminDashboardUserLength);
+
 // Admin approves or rejects a driver
 router.put("/drivers/approve", auth(), userController.updateDriverApprovalStatus);
+
+// toggle online status
+router.patch(
+  "/toggle-online-status",
+  auth(),
+  userController.toggleOnlineStatus
+);
+
+// toggle notification status
+router.patch(
+  "/toggle-notification-status",
+  auth(),
+  userController.toggleNotificationOnOff
+);
 
 // router.post("/demo-class", auth(), fileUploader.uploadFile, userController.postDemoVideo )
 
