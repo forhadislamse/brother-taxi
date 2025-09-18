@@ -177,11 +177,11 @@ interface ExtendedWebSocket extends WebSocket {
   path?: string;
 } 
 
-export const onlineUsers = new Map<
+export const onlineRiders = new Map<
   string,
   { socket: ExtendedWebSocket; path: string }
 >();
-const onlineCouriers = new Map<string, ExtendedWebSocket>();
+const onlineDrivers = new Map<string, ExtendedWebSocket>();
 
 // Set up WebSocket server
 export function setupWebSocket(server: Server) {
@@ -206,9 +206,9 @@ export function setupWebSocket(server: Server) {
     wss.clients.forEach((ws: ExtendedWebSocket) => {
       if (ws.isAlive === false) {
         if (ws.userId) {
-          onlineUsers.delete(ws.userId);
+          onlineRiders.delete(ws.userId);
           if (ws.role === UserRole.DRIVER) {
-            onlineCouriers.delete(ws.userId);
+            onlineDrivers.delete(ws.userId);
           }
         }
         return ws.terminate();
@@ -270,22 +270,22 @@ export function setupWebSocket(server: Server) {
             const { id, role, email } = user;
 
             // Remove existing connection for this user
-            const existingConnection = onlineUsers.get(id);
+            const existingConnection = onlineRiders.get(id);
             if (existingConnection && existingConnection.path === ws.path) {
               existingConnection.socket.close();
-              onlineUsers.delete(id);
+              onlineRiders.delete(id);
               if (role === UserRole.DRIVER) {
-                onlineCouriers.delete(id);
+                onlineDrivers.delete(id);
               }
             }
 
             ws.userId = id;
             ws.role = role;
             ws.userName = email;
-            onlineUsers.set(id, { socket: ws, path: ws.path! });
+            onlineRiders.set(id, { socket: ws, path: ws.path! });
 
             if (role === UserRole.DRIVER) {
-              onlineCouriers.set(id, ws);
+              onlineDrivers.set(id, ws);
             }
 
             ws.send(
@@ -323,9 +323,9 @@ export function setupWebSocket(server: Server) {
     // Close connection cleanup
     ws.on("close", () => {
       if (ws.userId) {
-        onlineUsers.delete(ws.userId);
+        onlineRiders.delete(ws.userId);
         if (ws.role === UserRole.DRIVER) {
-          onlineCouriers.delete(ws.userId);
+          onlineDrivers.delete(ws.userId);
         }
       }
     });
@@ -381,7 +381,7 @@ async function handleDriverLocationUpdate(
     );
 
     // Broadcast the location and remaining distance to the user
-    const userConnection = onlineUsers.get(transport.userId);
+    const userConnection = onlineRiders.get(transport.userId);
     if (userConnection?.socket.readyState === WebSocket.OPEN) {
       userConnection.socket.send(
         JSON.stringify({
@@ -756,7 +756,7 @@ async function handleChatMessage(ws: ExtendedWebSocket, parsedData: any) {
 
     // Find the recipient's connection and send the message
     if (recipientId) {
-      const recipientConnection = onlineUsers.get(recipientId);
+      const recipientConnection = onlineRiders.get(recipientId);
       if (recipientConnection?.socket.readyState === WebSocket.OPEN) {
         recipientConnection.socket.send(
           JSON.stringify({

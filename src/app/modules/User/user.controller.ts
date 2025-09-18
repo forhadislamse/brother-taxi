@@ -193,6 +193,8 @@ const toggleOnlineStatus = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+
+
 const toggleNotificationOnOff = catchAsync(async (req: Request, res: Response) => {
   const token = req.headers.authorization;
   const { isNotificationOn } = req.body;
@@ -209,6 +211,27 @@ const toggleNotificationOnOff = catchAsync(async (req: Request, res: Response) =
     data: result,
   });
 });
+
+// const toggleNotificationOnOff = catchAsync(
+//   async (req: Request, res: Response) => {
+//     const token = req.headers.authorization;
+//     const { isNotificationOn } = req.body;
+
+//     const result = await UserService.toggleNotificationOnOff(
+//       token as string,
+//       isNotificationOn
+//     );
+
+//     sendResponse(res, {
+//       statusCode: httpStatus.OK,
+//       success: true,
+//       message: `Notification is now ${
+//         isNotificationOn ? "enabled" : "disabled"
+//       }`,
+//       data: result,
+//     });
+//   }
+// );
 
 
 export const userController = {

@@ -4,6 +4,8 @@ import catchAsync from '../../../shared/catchAsync';
 import sendResponse from '../../../shared/sendResponse';
 import pick from '../../../shared/pick';
 import { paginationFields } from '../../../constants/pagination';
+import { UserRole } from '@prisma/client';
+import { NextFunction } from 'express';
 
 const createCarTransport = catchAsync(async (req, res) => {
   const token = req.headers.authorization;
@@ -79,10 +81,24 @@ const getRideDetailsById = catchAsync(async (req, res) => {
 
 
 // Get my rides (Rider side)
+// const getMyRides = catchAsync(async (req, res) => {
+//   const userId = req.user.id;
+
+//   const rides = await carTransportService.getMyRides(userId);
+
+//   sendResponse(res, {
+//     statusCode: httpStatus.OK,
+//     success: true,
+//     message: "My rides fetched successfully",
+//     data: rides,
+//   });
+// });
+
 const getMyRides = catchAsync(async (req, res) => {
   const userId = req.user.id;
+  const role = req.user.role as UserRole;
 
-  const rides = await carTransportService.getMyRides(userId);
+  const rides = await carTransportService.getMyRides(userId, role);
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -91,6 +107,21 @@ const getMyRides = catchAsync(async (req, res) => {
     data: rides,
   });
 });
+
+const getRideHistory = catchAsync(async (req, res) => {
+  const userId = req.user.id;
+  const role = req.user.role as UserRole;
+
+  const rides = await carTransportService.getRideHistory(userId, role);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Ride history fetched successfully",
+    data: rides,
+  });
+});
+
 
 
 const getMyStatsController = catchAsync(async (req, res) => {
@@ -124,6 +155,32 @@ const getAllCarTransports = catchAsync(async (req, res) => {
     statusCode: httpStatus.OK,
     success: true,
     message: "Car transport requests retrieved successfully",
+    meta: result.meta,
+    data: result.data,
+  });
+});
+
+const getCarTransportById = catchAsync(async (req, res) => {
+  const { id } = req.params;
+  const result = await carTransportService.getCarTransportById(id);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Car transport request retrieved successfully",
+    data: result,
+  });
+});
+
+const getNewCarTransportsReq = catchAsync(async (req, res) => {
+  const options = pick(req.query, paginationFields);
+
+  const result = await carTransportService.getNewCarTransportsReq(options);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "New car transport requests retrieved successfully",
     meta: result.meta,
     data: result.data,
   });
@@ -221,8 +278,11 @@ const completeJourney = catchAsync(async (req, res) => {
 export const carTransportController = {
   createCarTransport,
   cancelRide,
-  getRideDetailsById,
+  getRideDetailsById, //new
+  getNewCarTransportsReq, //new
   getMyRides,
+  getRideHistory,
+  getCarTransportById,
   getMyStatsController,
   getAllCarTransports,
   getRideStatusById,

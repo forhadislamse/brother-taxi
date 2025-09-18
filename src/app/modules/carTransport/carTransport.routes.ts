@@ -24,8 +24,23 @@ router.get(
 // Rider get all my rides
 router.get("/my-rides", auth(), carTransportController.getMyRides);
 
+// Rider get ride history
+router.get("/my-rides-history", auth(), carTransportController.getRideHistory);
+
 // Rider এর total rides count fetch করার route
 router.get("/my-rides/count", auth(), carTransportController.getMyStatsController);
+
+router.get(
+  "/single/:id",
+  auth(),
+  carTransportController.getCarTransportById
+);
+
+router.get(
+  "/new-requests",
+  auth(USER_ROLE.ADMIN),
+  carTransportController.getNewCarTransportsReq
+);
 
 router.get(
   "/ride-status/:id",

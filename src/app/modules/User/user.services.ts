@@ -493,6 +493,9 @@ console.log(driver);
   return driverSafe;
 };
 
+
+
+
 // toggle user online status
 const toggleUserOnlineStatus = async (
   userToken: string,
@@ -519,7 +522,10 @@ const toggleUserOnlineStatus = async (
       isUserOnline,
     },
     select: {
-      id: true,
+       id: true,
+      fullName: true,
+      phoneNumber: true,
+      role: true,
       isUserOnline: true,
       updatedAt: true,
     },
@@ -528,6 +534,8 @@ const toggleUserOnlineStatus = async (
   const userWithoutSensitive = omit(updatedUser, ["password", "fcmToken"]);
   return userWithoutSensitive;
 };
+
+
 
 // toggle user online status
 const toggleNotificationOnOff = async (
@@ -555,7 +563,10 @@ const toggleNotificationOnOff = async (
       isNotificationOn,
     },
     select: {
-      id: true,
+     id: true,
+      fullName: true,
+      phoneNumber: true,
+      role: true,
       isNotificationOn: true,
       updatedAt: true,
     },
@@ -564,6 +575,8 @@ const toggleNotificationOnOff = async (
   const userWithoutSensitive = omit(updatedUser, ["password", "fcmToken"]);
   return userWithoutSensitive;
 };
+
+
 
 
 export const userService = {
