@@ -42,6 +42,8 @@ const calculateFare = async (token: string, payload: any) => {
   await prisma.estimateFare.create({
     data: {
       userId,
+      pickup:payload.pickup,
+      dropOff:payload.dropOff,
       pickupLat: payload.pickupLat,
       pickupLng: payload.pickupLng,
       dropOffLat: payload.dropOffLat,
@@ -57,6 +59,8 @@ const calculateFare = async (token: string, payload: any) => {
   });
 
   return {
+    pickup:payload.pickup,
+    dropOff:payload.dropOff,
     pickupLocation: { lat: payload.pickupLat, lng: payload.pickupLng },
     dropOffLocation: { lat: payload.dropOffLat, lng: payload.dropOffLng },
     distance: distance.toFixed(2),
@@ -154,18 +158,23 @@ const getMyEstimateFareList = async (userId: string) => {
   const result = estimates.map((e) => {
     // calculateFare expects a token and payload, but here we just want to merge fare config
     // So, instead, just merge the fare config without calling calculateFare
+    const distance = e.distance ?? 0; // null হলে 0 ধরে নিচ্ছি
+    const calculatedFare = (activeFare.baseFare ?? 0) + distance * (activeFare.costPerKm ?? 0);
     return {
       ...e,
       baseFare: activeFare.baseFare ?? 0,
       costPerKm: activeFare.costPerKm ?? 0,
       costPerMin: activeFare.costPerMin ?? 0,
-      minimumFare: activeFare.minimumFare ?? 0,
       waitingPerMin: activeFare.waitingPerMin ?? 0,
-      totalFare: Math.round(
-        ((activeFare.baseFare ?? 0) + e.distance * (activeFare.costPerKm ?? 0)) < (activeFare.minimumFare ?? 0)
-          ? (activeFare.minimumFare ?? 0)
-          : (activeFare.baseFare ?? 0) + e.distance * (activeFare.costPerKm ?? 0)
-      ),
+      // totalFare: Math.round(
+      //   ((activeFare.baseFare ?? 0) + e.distance * (activeFare.costPerKm ?? 0)) < (activeFare.minimumFare ?? 0)
+      //     ? (activeFare.minimumFare ?? 0)
+      //     : (activeFare.baseFare ?? 0) + e.distance * (activeFare.costPerKm ?? 0)
+      // ),
+      totalFare: Math.round(calculatedFare < (activeFare.minimumFare ?? 0)
+      ? (activeFare.minimumFare ?? 0)
+      : calculatedFare
+    ),
     };
   });
 

@@ -6,7 +6,7 @@ import prisma from "../../../shared/prisma";
 import ApiError from "../../../errors/ApiErrors";
 import { calculateDistance } from "../../../shared/calculateDistance";
 import { findNearbyDrivers } from "../../../shared/findNearByDrivers";
-import { CarTransport, PaymentStatus, Prisma, TransportStatus, UserRole } from "@prisma/client";
+import { CarTransport, PaymentStatus, Prisma, RideType, TransportStatus, UserRole } from "@prisma/client";
 import { paginationHelper } from "../../../helpars/paginationHelper";
 import { IGenericResponse } from "../vehicle/vehicle.interface";
 import { IPaginationOptions } from "../../../interfaces/paginations";
@@ -305,6 +305,8 @@ const createCarTransport = async (token: string, payload: any, files: any[]) => 
 
   // Distance
   const distance = calculateDistance(payload.pickupLat, payload.pickupLng, payload.dropOffLat, payload.dropOffLng);
+  
+  const serviceType: RideType = distance < 10 ? RideType.MiniRide : RideType.LongRide;
 
   // Ride time & waiting time
   const rideTime = payload.rideTime ? Number(payload.rideTime) : 20;
@@ -322,6 +324,8 @@ const createCarTransport = async (token: string, payload: any, files: any[]) => 
       ...payload,
       userId,
       totalAmount: totalFare,
+      distance,
+      serviceType,
       beforePickupImages: uploadedImages.map(img => img.Location),
     },
   });
@@ -973,9 +977,6 @@ const getRideHistory = async (userId: string, role: UserRole) => {
 
   return rides; // ✅ always return rides
 };
-
-
-
 
 
 const getMyRidesOrTripsCount = async (userId: string, role: "RIDER" | "DRIVER") => {

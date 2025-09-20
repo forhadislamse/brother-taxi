@@ -8,6 +8,7 @@ import { carTransportRoutes } from "../modules/carTransport/carTransport.routes"
 import { estimateFareRoutes } from "../modules/estimateFare/estimateFare.routes";
 import { chatRoutes } from "../../chats/chats.routes";
 import { reviewRoutes } from "../modules/Review/review.route";
+import { PaymentRoutes } from "../modules/Payment/Payment.routes";
 
 
 
@@ -54,13 +55,13 @@ const moduleRoutes = [
     path: "/reviews",
     route: reviewRoutes,
   },
+  {
+    path: "/payments",
+    route: PaymentRoutes,
+  },
   // {
   //   path: "/tutors",
   //   route: tutorRoutes
-  // },
-  // {
-  //   path: "/payments",
-  //   route: paymentRoutes,
   // },
   // {
   //   path: "/notifications",
