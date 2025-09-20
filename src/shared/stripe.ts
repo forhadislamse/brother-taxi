@@ -6,7 +6,9 @@ if (!config.stripe.secret_key) {
 }
 
 const stripe = new Stripe(config.stripe.secret_key, {
-  apiVersion: "2024-06-20",
+  // apiVersion: "2024-06-20",
+  apiVersion: "2025-08-27.basil",
+
   typescript: true,
 });
 
