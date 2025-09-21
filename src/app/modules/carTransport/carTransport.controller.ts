@@ -122,7 +122,20 @@ const getRideHistory = catchAsync(async (req, res) => {
   });
 });
 
+const getDriverIncome = catchAsync(async (req, res) => {
+  const token = req.headers.authorization;
+  const result = await carTransportService.getDriverIncome(
+    token as string,
+    req.query
+  );
 
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Driver's income details retrieved successfully",
+    data: result,
+  });
+});
 
 const getMyStatsController = catchAsync(async (req, res) => {
   const userId = req.user.id;
@@ -169,6 +182,19 @@ const getCarTransportById = catchAsync(async (req, res) => {
     success: true,
     message: "Car transport request retrieved successfully",
     data: result,
+  });
+});
+
+const getCompletedRide = catchAsync(async (req, res) => {
+  const { rideId } = req.params;
+  const userId = req.user?.id; // from auth middleware
+
+  const ride = await carTransportService.getCompletedRideFromDb(rideId, userId);
+  sendResponse(res,{
+    statusCode:httpStatus.OK,
+    success: true,
+    message: "Ride completed successfully",
+    data: ride,
   });
 });
 
@@ -279,8 +305,10 @@ export const carTransportController = {
   createCarTransport,
   cancelRide,
   getRideDetailsById, //new
+  getCompletedRide,
   getNewCarTransportsReq, //new
   getMyRides,
+  getDriverIncome,
   getRideHistory,
   getCarTransportById,
   getMyStatsController,

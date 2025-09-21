@@ -276,8 +276,8 @@ model CarTransport {
   // ───── Scheduling
   pickupDate  String? @default("")
   pickupTime  String? @default("")
-  rideTime    String? @default("")
-  waitingTime String? @default("")
+  rideTime    Float? @default(0)
+  waitingTime Float? @default(0)
 
   // ───── Status Tracking
   status                  TransportStatus @default(PENDING)

@@ -30,6 +30,13 @@ router.get("/my-rides-history", auth(), carTransportController.getRideHistory);
 // Rider এর total rides count fetch করার route
 router.get("/my-rides/count", auth(), carTransportController.getMyStatsController);
 
+// Get driver's income details
+router.get(
+  "/driver-income",
+  auth(),
+  carTransportController.getDriverIncome
+);
+
 router.get(
   "/single/:id",
   auth(),
@@ -83,6 +90,13 @@ router.patch("/start-ride", auth(), carTransportController.startJourney);
 
 // Driver completes the journey
 router.patch("/complete-ride", auth(), carTransportController.completeJourney);
+
+// Rider fetches completed ride by rideId
+router.get(
+  "/:rideId/completed",
+  auth(), // verify rider token
+  carTransportController.getCompletedRide
+);
 
 // router.get('/', auth(), carTransportController.getCarTransportList);
 

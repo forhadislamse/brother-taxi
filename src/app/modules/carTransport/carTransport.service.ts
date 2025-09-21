@@ -10,7 +10,7 @@ import { CarTransport, PaymentStatus, Prisma, RideType, TransportStatus, UserRol
 import { paginationHelper } from "../../../helpars/paginationHelper";
 import { IGenericResponse } from "../vehicle/vehicle.interface";
 import { IPaginationOptions } from "../../../interfaces/paginations";
-import { IAssignDriverReq, ICarTransportFilters, ICompleteJourneyReq, IConfirmArrivalReq, IDriverResponseReq, IStartJourneyReq } from "./carTransport.interface";
+import { IAssignDriverReq, ICarTransportFilters, ICompleteJourneyReq, IConfirmArrivalReq, IDriverIncomeResponse, IDriverJobFilters, IDriverResponseReq, IStartJourneyReq } from "./carTransport.interface";
 
 // async function calculateFareFromConfig(distance: number) {
 //   const activeFare = await prisma.fare.findFirst({
@@ -165,61 +165,6 @@ export async function calculateFareFromConfig(
   };
 }
 
-// Service function
-// const createCarTransport = async (
-//   token: string,
-//   payload: any,
-//   files: any[]
-// ) => {
-//   const decodedToken = jwtHelpers.verifyToken(token, config.jwt.jwt_secret!);
-//   const userId = decodedToken.id;
-
-//   const vehicle = await prisma.vehicle.findUnique({
-//     where: { id: payload.vehicleId },
-//   });
-//   if (!vehicle) throw new Error("Vehicle not found");
-
-//   // 1️⃣ Distance (Haversine বা Google API)
-//   const distance = calculateDistance(
-//     payload.pickupLat,
-//     payload.pickupLng,
-//     payload.dropOffLat,
-//     payload.dropOffLng
-//   );
-
-//   // 2️⃣ Ride time (Google Distance Matrix API দিয়ে পাওয়া যাবে)
-//   // const rideTime = payload.rideTime || 20; // মিনিট (dummy/default রাখলাম)
-// // const rideTime = payload.rideTime ? Number(payload.rideTime) : 20;
-//   // 3️⃣ Waiting time (pickup point এ driver কতক্ষণ অপেক্ষা করেছে)
-  
-//   const waitingTime = payload.waitingTime ? Number(payload.waitingTime) : 0;
-// const rideTime = payload.rideTime ? Number(payload.rideTime) : 20;
-
-
-//   // 4️⃣ Fare calculate
-//   const { totalFare } = await calculateFareFromConfig(
-//     distance,
-//     rideTime,
-//     waitingTime
-//   );
-
-//   // 5️⃣ Image upload
-//   const uploadedImages = await Promise.all(
-//     files.map((file) => fileUploader.uploadToDigitalOcean(file))
-//   );
-
-//   // 6️⃣ DB save
-//   const carTransport = await prisma.carTransport.create({
-//     data: {
-//       ...payload,
-//       userId,
-//       totalAmount: totalFare,
-//       beforePickupImages: uploadedImages.map((img) => img.Location),
-//     },
-//   });
-
-//   return carTransport;
-// };
 
 // const createCarTransport = async (
 //   token: string,
@@ -417,7 +362,34 @@ const getRideDetailsById = async (rideId: string, ) => {
   return ride;
 }   
 
+const getCompletedRideFromDb = async (rideId: string, userId: string) => {
+  const ride = await prisma.carTransport.findUnique({
+    where: { id: rideId },
+    include: {
+      user: true,
+      vehicle: {
+        include: {
+          driver: true,
+        },
+      },
+    },
+  });
 
+  if (!ride) {
+    throw new ApiError(httpStatus.NOT_FOUND, "Ride not found");
+  }
+
+  // Ensure only the rider who booked can view
+  if (ride.userId !== userId) {
+    throw new ApiError(httpStatus.FORBIDDEN, "Not authorized to view this ride");
+  }
+
+  if (ride.status !== "COMPLETED") {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Ride not completed yet");
+  }
+
+  return ride;
+};
 
 const getCarTransportById = async (
   id: string
@@ -976,6 +948,125 @@ const getRideHistory = async (userId: string, role: UserRole) => {
   }
 
   return rides; // ✅ always return rides
+};
+
+const getDriverIncome = async (
+  userToken: string,
+  filters: IDriverJobFilters
+): Promise<IDriverIncomeResponse> => {
+  // Decode token to get driverId
+  const decodedToken = jwtHelpers.verifyToken(
+    userToken,
+    config.jwt.jwt_secret!
+  );
+
+  const {
+    startDate,
+    endDate,
+    page = 1,
+    limit = 10,
+    sortBy = "createdAt",
+    sortOrder = "desc",
+  } = filters;
+
+  const skip = (page - 1) * limit;
+
+  // Build where conditions
+  const whereConditions: Prisma.CarTransportWhereInput = {
+    assignedDriver: decodedToken.id,
+    assignedDriverReqStatus: "ACCEPTED",
+    status: TransportStatus.COMPLETED,
+    paymentStatus: "COMPLETED",
+  };
+
+  if (startDate && endDate) {
+    whereConditions.createdAt = {
+      gte: new Date(startDate),
+      lte: new Date(endDate),
+    };
+  }
+
+  // 🔹 Aggregate stats (income, distance, duration)
+  const stats = await prisma.carTransport.aggregate({
+    where: whereConditions,
+    _sum: {
+      distance: true,
+      totalAmount: true,
+      rideTime: true,
+    },
+    _count: {
+      id: true,
+    },
+  });
+
+  // 🔹 Fetch paginated transactions
+  const transactions = await prisma.carTransport.findMany({
+    where: whereConditions,
+    select: {
+      id: true,
+      totalAmount: true,
+      distance: true,
+      rideTime: true,
+      serviceType: true,
+      createdAt: true,
+      user: {
+        select: {
+          id: true,
+          fullName: true,
+          profileImage: true,
+          
+        },
+      },
+      vehicle: {
+        select: {
+          id: true,
+          manufacturer: true,
+          model: true,
+          licensePlateNumber: true,
+          driver: {
+            select: {
+              id: true,
+              fullName: true,
+              phoneNumber: true,
+              profileImage:true,
+            },
+          },
+        },
+      },
+    },
+    skip,
+    take: limit,
+    orderBy: {
+      [sortBy]: sortOrder,
+    },
+  });
+// format distance for each transaction
+  const formattedTransactions = transactions.map((t) => ({
+    ...t,
+    distance: t.distance
+      ? parseFloat(t.distance.toFixed(2))
+      : 0,
+  }));
+  const total = await prisma.carTransport.count({
+    where: whereConditions,
+  });
+
+  return {
+    totalIncome: stats._sum.totalAmount || 0,
+    totalDistance: stats._sum.distance
+      ? parseFloat(stats._sum.distance.toFixed(2))
+      : 0,
+    totalDuration: stats._sum.rideTime || 0,
+    totalTrips: stats._count.id || 0,
+    transactions: {
+      meta: {
+        page,
+        limit,
+        total,
+      },
+      data: transactions,
+    },
+  };
 };
 
 
@@ -1698,9 +1789,11 @@ export const carTransportService = {
   createCarTransport,
   cancelRide,
   getRideDetailsById,
+  getCompletedRideFromDb,
   getNewCarTransportsReq,
   getCarTransportById,
   getMyRides,
+  getDriverIncome,
   getRideHistory,
   getMyRidesOrTripsCount,
   getAllCarTransports,
