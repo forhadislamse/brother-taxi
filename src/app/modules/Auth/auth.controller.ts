@@ -196,6 +196,135 @@ const logoutUser = catchAsync(async (req: Request, res: Response) => {
 //   });
 // })
 
+const riderLoginController = catchAsync(async (req: Request, res: Response) => {
+  const { accessToken } = req.body;
+
+  if (!accessToken) {
+    return sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: false,
+      message: 'AccessToken required',
+      data: null,
+    });
+  }
+
+  const result = await AuthServices.riderLoginService(accessToken);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'User logged in successfully',
+    data: result,
+  });
+});
+
+const driverLoginController = catchAsync(async (req: Request, res: Response) => {
+  const { accessToken } = req.body;
+
+  if (!accessToken) {
+    return sendResponse(res, {
+      statusCode: httpStatus.BAD_REQUEST,
+      success: false,
+      message: 'AccessToken required',
+      data: null,
+    });
+  }
+
+  const result = await AuthServices.driverLoginService(accessToken);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: 'User logged in successfully',
+    data: result,
+  });
+});
+
+// const updateCurrentLocation = catchAsync(
+//   async (req: Request, res: Response) => {
+//     const { userId } = req.user as any;
+//     const { lat, lng } = req.body;
+
+//     if (lat == null || lng == null) {
+//       return sendResponse(res, {
+//         statusCode: 400,
+//         success: false,
+//         message: "latitude & longitude required",
+//         data: null,
+//       });
+//     }
+
+//     const updatedUser = await AuthServices.updateUserLocation(userId, lat, lng );
+
+//     sendResponse(res, {
+//       statusCode: 200,
+//       success: true,
+//       message: "Current location updated successfully",
+//       data: updatedUser,
+//     });
+//   }
+// );
+
+ const updateCurrentLocation = catchAsync(
+  async (req: Request, res: Response) => {
+    const userId = (req.user as any)?.id; // auth middleware থেকে আসা
+    const { lat, lng } = req.body;
+
+    if (!userId) {
+      return sendResponse(res, {
+        statusCode: 401,
+        success: false,
+        message: "Unauthorized",
+        data: null,
+      });
+    }
+
+    if (lat == null || lng == null) {
+      return sendResponse(res, {
+        statusCode: 400,
+        success: false,
+        message: "latitude & longitude required",
+        data: null,
+      });
+    }
+
+    const updatedUser = await AuthServices.updateUserLocation(userId, lat, lng);
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Current location updated successfully",
+      data: updatedUser,
+    });
+  }
+);
+
+const updateAddress = catchAsync(
+  async (req: Request, res: Response) => {
+    const token = req.headers.authorization;
+    const { address } = req.body;
+
+    if (!address) {
+      return sendResponse(res, {
+        statusCode: 400,
+        success: false,
+        message: "address required",
+        data: null,
+      });
+    }
+
+    const updatedUser = await AuthServices.updateUserAddress(token as string, address);
+
+    sendResponse(res, {
+      statusCode: 200,
+      success: true,
+      message: "Address updated successfully",
+      data: updatedUser,
+    });
+  }
+);
+
+
 export const AuthController = {
   // loginUser,
   // requestOtp,
@@ -203,6 +332,10 @@ export const AuthController = {
   logoutUser,
   // changePassword,
   resendOtp,
+  riderLoginController,
+  driverLoginController,
+  updateCurrentLocation,
+ updateAddress
   // forgotPassword,
   // resetPassword,
   // verifyForgotPasswordOtp,

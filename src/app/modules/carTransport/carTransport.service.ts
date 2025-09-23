@@ -960,6 +960,11 @@ const getDriverIncome = async (
     config.jwt.jwt_secret!
   );
 
+  //  Driver-only check
+  if (decodedToken.role !== "DRIVER") {
+    throw new ApiError(httpStatus.FORBIDDEN, "Not authorized: driver only");
+  }
+
   const {
     startDate,
     endDate,
@@ -1070,42 +1075,103 @@ const getDriverIncome = async (
 };
 
 
+// const getMyRidesOrTripsCount = async (userId: string, role: "RIDER" | "DRIVER") => {
+//   if (role === "RIDER") {
+//     // Rider এর completed rides count
+//     const totalRides = await prisma.carTransport.count({
+//       where: {
+//         userId,
+//         status: TransportStatus.COMPLETED,
+//       },
+//     });
+
+//     await prisma.user.update({
+//       where: { id: userId },
+//       data: { totalRides },
+//     });
+
+//     return { totalRides };
+//   }
+
+//   if (role === "DRIVER") {
+//     // Driver এর completed trips count
+//     const totalTrips = await prisma.carTransport.count({
+//       where: {
+//         assignedDriver: userId, // Driver assign করা হয়েছে যেটাতে
+//         status: TransportStatus.COMPLETED,
+//       },
+//     });
+
+//     await prisma.user.update({
+//       where: { id: userId },
+//       data: { totalTrips },
+//     });
+
+//     return { totalTrips };
+//   }
+
+//   return { totalRides: 0, totalTrips: 0 };
+// };
+
+
 const getMyRidesOrTripsCount = async (userId: string, role: "RIDER" | "DRIVER") => {
   if (role === "RIDER") {
-    // Rider এর completed rides count
-    const totalRides = await prisma.carTransport.count({
+    // Rider stats
+    const riderStats = await prisma.carTransport.aggregate({
       where: {
         userId,
         status: TransportStatus.COMPLETED,
+        paymentStatus:PaymentStatus.COMPLETED
+      },
+      _count: { id: true },
+      _sum: {
+        distance: true,
       },
     });
 
+    const totalRides = riderStats._count.id || 0;
+    const totalDistance = riderStats._sum.distance
+      ? parseFloat(riderStats._sum.distance.toFixed(2))
+      : 0;
+
     await prisma.user.update({
       where: { id: userId },
-      data: { totalRides },
+      data: { totalRides, totalDistance},
     });
 
-    return { totalRides };
+    return { totalRides, totalDistance };
   }
 
   if (role === "DRIVER") {
-    // Driver এর completed trips count
-    const totalTrips = await prisma.carTransport.count({
+    // Driver stats
+    const driverStats = await prisma.carTransport.aggregate({
       where: {
-        assignedDriver: userId, // Driver assign করা হয়েছে যেটাতে
+        assignedDriver: userId,
         status: TransportStatus.COMPLETED,
+        paymentStatus:PaymentStatus.COMPLETED
+
+      },
+      _count: { id: true },
+      _sum: {
+        distance: true,
+
       },
     });
 
+    const totalTrips = driverStats._count.id || 0;
+    const totalDistance  = driverStats._sum.distance
+      ? parseFloat(driverStats._sum.distance.toFixed(2))
+      : 0;;
+
     await prisma.user.update({
       where: { id: userId },
-      data: { totalTrips },
+      data: { totalTrips, totalDistance },
     });
 
-    return { totalTrips };
+    return { totalTrips, totalDistance };
   }
 
-  return { totalRides: 0, totalTrips: 0 };
+  return { totalRides: 0, totalTrips: 0, totalDistance: 0};
 };
 
 

@@ -61,9 +61,10 @@ router.post("/card-payment", auth(), PaymentController.processCardPayment);
 //5. make payment for card/cash/wallet
 router.post("/wallet-payment", auth(), PaymentController.handleWalletPayment);
 
+//8. refund
 router.post(
   "/refund/:paymentId",
-  auth("Admin"),
+  auth(USER_ROLE.ADMIN),
   PaymentController.refundPayment
 );
 
@@ -80,10 +81,11 @@ router.post(
   handleStripeWebhook
 );
 
-// Get payment history
+//10. Get payment history
 router.get("/", auth(), PaymentController.getPayments);
 
-// Get refunded payments
+
+//9. Get refunded payments
 router.get("/refunded-payments", auth(), PaymentController.getRefundedPayments);
 
 export const PaymentRoutes = router;

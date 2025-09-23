@@ -432,6 +432,16 @@ const getAllTransactions = async (
     where.paymentMethod = paymentMethod;
   }
 
+  // sum of amount
+  const aggregateResult = await prisma.payment.aggregate({
+    where,
+    _sum: {
+      amount: true,
+    },
+  });
+
+  const allAmount = aggregateResult._sum.amount || 0;
+
   // Get total count for pagination
   const total = await prisma.payment.count({ where });
 
@@ -449,6 +459,7 @@ const getAllTransactions = async (
       page,
       limit,
       total,
+      allAmount,
       totalPages: Math.ceil(total / limit),
     },
     data: transactions,

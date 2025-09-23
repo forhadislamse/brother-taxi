@@ -11,6 +11,7 @@ import prisma from "../../../shared/prisma";
 import { emailSender } from "../../../shared/emailSender";
 import { generateOtp } from "../../../shared/getTransactionId";
 import { sendMessage } from "../../../shared/sendMessage";
+import axios from "axios";
 
 // user login
 // const loginUser = async (payload: {
@@ -498,6 +499,118 @@ const verifyLogin = async (payload: {
 //   return null;
 // }
 
+// Utility to generate referral code
+const getRefferId = () => Math.random().toString(36).substring(2, 8);
+
+// Google user fetch
+const getGoogleUser = async (accessToken: string) => {
+  const res = await axios.get("https://www.googleapis.com/oauth2/v3/userinfo", {
+    headers: { Authorization: `Bearer ${accessToken}` },
+  });
+  return res.data;
+};
+
+// Social login service (Google only)
+const riderLoginService = async (accessToken: string) => {
+  const userData = await getGoogleUser(accessToken);
+
+  if (!userData.email) throw new Error('Email not found from Google');
+
+  // Check if user exists
+  // let user = await prisma.user.findUnique({ where: { email: userData.email } });
+  let user = await prisma.user.findFirstOrThrow({ where: { email: userData.email } });
+
+
+  // Generate unique referral code if new user
+  let newReferralCode = getRefferId();  //find unique if referel code unique
+  while (await prisma.user.findFirstOrThrow({ where: { referralCode: newReferralCode } })) {
+    newReferralCode = getRefferId();
+  }
+
+  // Create user if not exist
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email: userData.email,
+        fullName: userData.name || '',
+        phoneNumber: userData.phoneNumber || '0000000000',
+        profileImage: userData.picture || '',
+        // isVerified: true,
+        referralCode: newReferralCode,
+        status: 'ACTIVE',
+        role: UserRole.RIDER
+      },
+    });
+  }
+
+  // Generate JWT
+  const token = jwtHelpers.generateToken(
+    { id: user.id, email: user.email, role: user.role },
+    config.jwt.jwt_secret as Secret,
+    config.jwt.expires_in as string
+  );
+
+  return { token, user };
+};
+
+const driverLoginService = async (accessToken: string) => {
+  // Get Google user info
+  const userData = await getGoogleUser(accessToken);
+
+  if (!userData.email) throw new Error('Email not found from Google');
+
+  // Check if driver exists
+  let user = await prisma.user.findFirst({ where: { email: userData.email } });
+
+  // Generate unique referral code
+  let newReferralCode = getRefferId();
+  while (await prisma.user.findFirst({ where: { referralCode: newReferralCode } })) {
+    newReferralCode = getRefferId();
+  }
+
+  // Create driver if not exists
+  if (!user) {
+    user = await prisma.user.create({
+      data: {
+        email: userData.email,
+        fullName: userData.name || '',
+        phoneNumber: userData.phoneNumber || '0000000000', // required field
+        profileImage: userData.picture || '',
+        referralCode: newReferralCode,
+        status: 'ACTIVE',
+        role: UserRole.DRIVER, // important
+      },
+    });
+  }
+
+  // Generate JWT token
+  const token = jwtHelpers.generateToken(
+    { id: user.id, email: user.email, role: user.role },
+    config.jwt.jwt_secret as Secret,
+    config.jwt.expires_in as string
+  );
+
+  return { token, user };
+};
+
+// Update current location
+const updateUserLocation = async (userId: string, lat: number, lng: number) => {
+  return await prisma.user.update({
+    where: { id: userId },
+    data: { lat, lng },
+  });
+};
+
+// Update address
+export const updateUserAddress = async (token: string, address: string) => {
+  return await prisma.user.update({
+    where: { id: token },
+    data: { address },
+  });
+};
+
+
+
 
 
 export const AuthServices = {
@@ -505,6 +618,10 @@ export const AuthServices = {
   // requestOtp,
   verifyLogin,
   resendOtp,
+  riderLoginService,
+  driverLoginService,
+  updateUserLocation,
+  updateUserAddress
   // changePassword,
   // forgotPassword,
   // resetPassword,

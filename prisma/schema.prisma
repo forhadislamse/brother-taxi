@@ -169,12 +169,12 @@ model User {
   otpExpiresAt           DateTime?
   phoneVerificationToken String?
   isPhoneNumberVerify    Boolean    @default(false)
-
-  profileImage     String?
-  fcmToken         String? @default("")
-  isNotificationOn Boolean @default(false)
-  isUserOnline     Boolean @default(true)
-  onBoarding       Boolean @default(false)
+  // isVerified             Boolean    @default(false)
+  profileImage           String?
+  fcmToken               String?    @default("")
+  isNotificationOn       Boolean    @default(false)
+  isUserOnline           Boolean    @default(true)
+  onBoarding             Boolean    @default(false)
 
   accountLink      String? @default("")
   stripeAccountUrl String? @default("")
@@ -276,8 +276,8 @@ model CarTransport {
   // ───── Scheduling
   pickupDate  String? @default("")
   pickupTime  String? @default("")
-  rideTime    Float? @default(0)
-  waitingTime Float? @default(0)
+  rideTime    Float?  @default(0)
+  waitingTime Float?  @default(0)
 
   // ───── Status Tracking
   status                  TransportStatus @default(PENDING)

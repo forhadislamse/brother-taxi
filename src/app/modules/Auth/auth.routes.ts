@@ -21,6 +21,11 @@ router.post("/logout", AuthController.logoutUser);
 //user verify phone
 router.post("/verify-login", AuthController.verifyLogin);
 router.post("/resend-otp", AuthController.resendOtp);
+router.post('/google-login-rider', AuthController.riderLoginController);
+router.post('/google-login-driver', AuthController.driverLoginController);
+
+router.patch("/current", AuthController.updateCurrentLocation);
+router.patch("/address", AuthController.updateAddress);
 
 // router.put(
 //   "/change-password",
