@@ -75,18 +75,18 @@ const createVehicle = async (
     throw new ApiError(httpStatus.NOT_FOUND, "User not found");
   }
 
- // 3️⃣ Check if user is a DRIVER
+ // Check if user is a DRIVER
   if (existingUser.role !== "DRIVER") {
     throw new ApiError(httpStatus.FORBIDDEN, "Only drivers can create vehicles");
   }
 
-  // 4️⃣ Check if driver is approved by admin
-  if (existingUser.adminApprovedStatus !== "APPROVED") {
-    throw new ApiError(
-      httpStatus.FORBIDDEN,
-      "Driver is not approved by admin yet"
-    );
-  }
+  // Check if driver is approved by admin
+  // if (existingUser.adminApprovedStatus !== "APPROVED") {
+  //   throw new ApiError(
+  //     httpStatus.FORBIDDEN,
+  //     "Driver is not approved by admin yet"
+  //   );
+  // }
 
   // Vehicle create
   const result = await prisma.vehicle.create({
@@ -342,6 +342,9 @@ const getUserVehicles = async (
           gender: true,
           address: true,
           adminApprovedStatus: true,
+          licenseFrontSide:true,
+          licenseBackSide:true,
+
         },
       },
     },

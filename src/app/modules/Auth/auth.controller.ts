@@ -267,7 +267,8 @@ const driverLoginController = catchAsync(async (req: Request, res: Response) => 
 
  const updateCurrentLocation = catchAsync(
   async (req: Request, res: Response) => {
-    const userId = (req.user as any)?.id; // auth middleware থেকে আসা
+    const userId = req.user.id; // auth middleware থেকে আসা
+    // console.log(userId)
     const { lat, lng } = req.body;
 
     if (!userId) {
@@ -335,7 +336,7 @@ export const AuthController = {
   riderLoginController,
   driverLoginController,
   updateCurrentLocation,
- updateAddress
+  updateAddress
   // forgotPassword,
   // resetPassword,
   // verifyForgotPasswordOtp,

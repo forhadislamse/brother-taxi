@@ -52,6 +52,8 @@ const getAllUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+
+
 const adminDashboardUserLength = catchAsync(async (req: Request, res: Response) => {
   const result = await userService.adminDashboardUserLength(); 
 
@@ -94,6 +96,40 @@ const uploadDriverLicense = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const driverOnboarding = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+  const files = req.files as { [fieldname: string]: Express.Multer.File[] };
+
+  if (!req.body.data) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "Onboarding data is required!");
+  }
+
+  // Parse JSON string (profile + vehicle info একসাথে পাঠাবে)
+  const parsedData = JSON.parse(req.body.data);
+  const { profile, vehicle } = parsedData;
+
+  const result = await userService.driverOnboarding(userId, profile, vehicle, files);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Driver onboarding completed successfully",
+    data: result,
+  });
+});
+
+const getDriverOnboarding = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id;
+
+  const result = await userService.getDriverOnboarding(userId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Driver profile and vehicles fetched successfully",
+    data: result,
+  });
+});
 
 
 // // * Update user profile
@@ -240,10 +276,13 @@ export const userController = {
   getAllUser,
   adminDashboardUserLength,
   uploadDriverLicense,
+  getDriverOnboarding,
   updateProfileController,
+  driverOnboarding,
   updateDriverApprovalStatus,
   getDriversPendingApproval,
   toggleOnlineStatus,
   toggleNotificationOnOff,
+
   // postDemoVideo
 };

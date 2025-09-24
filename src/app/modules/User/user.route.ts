@@ -6,11 +6,20 @@ import auth from "../../middlewares/auth";
 import { UserRole } from "@prisma/client";
 import { fileUploader } from "../../../helpars/fileUploader";
 import multer from "multer";
+import { USER_ROLE } from "../../../enums/enums";
 
 const router = express.Router();
 // Configure multer for user profile updates
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
+
+const uploadDriverOnboarding = upload.fields([
+  { name: "profileImage", maxCount: 1 },
+  { name: "licenseFrontSide", maxCount: 1 },
+  { name: "licenseBackSide", maxCount: 1 },
+  { name: "vehicleImage", maxCount: 1 },
+]);
+
 const licenseUpload = upload.fields([
   // { name: "DriverLicenseImage", maxCount: 1 },
   { name: "licenseFrontSide", maxCount: 1 },
@@ -47,6 +56,17 @@ router.patch(
   fileUploader.uploadSingle,
   userController.updateProfileController
 );
+
+router.post(
+  "/driver/onboarding",
+  auth(),
+  uploadDriverOnboarding, // profileImage, licenseFrontSide, licenseBackSide, vehicleImage
+  userController.driverOnboarding
+);
+
+router.get("/onboarding", auth(), userController.getDriverOnboarding);
+
+
 
 router.get("/drivers/pending", auth(), userController.getDriversPendingApproval);
 

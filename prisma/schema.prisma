@@ -493,12 +493,12 @@ model Vehicle {
   id                 String   @id @default(auto()) @map("_id") @db.ObjectId
   userId             String   @db.ObjectId
   manufacturer       String
-  model              String
-  year               Int
+  model              String?
+  year               Int?
   image              String?
-  color              String
-  licensePlateNumber String
-  isActive           Boolean  @default(true)
+  color              String?
+  licensePlateNumber String?
+  isActive           Boolean?  @default(true)
   bh                 String // same as your schema
   refferalCode       String
   createdAt          DateTime @default(now())

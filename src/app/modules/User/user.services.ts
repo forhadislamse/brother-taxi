@@ -339,6 +339,126 @@ const updateUserProfile = async (
   return updatedUser;
 };
 
+const driverOnboarding = async (
+  userId: string,
+  profileData: Partial<IUser>,
+  vehicleData: any,
+  files: { [fieldname: string]: Express.Multer.File[] }
+) => {
+  const user = await prisma.user.findUnique({ where: { id: userId } });
+  if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+
+  // Check role manually
+  if (user.role !== "DRIVER") {
+    throw new ApiError(httpStatus.FORBIDDEN, "Only drivers can complete onboarding");
+  }
+
+  // Handle file uploads
+  let profileImage: string | undefined;
+  let licenseFrontSide: string | undefined;
+  let licenseBackSide: string | undefined;
+  let vehicleImage: string | undefined;
+
+
+  if (files?.profileImage?.[0]) {
+    const uploaded = await fileUploader.uploadToDigitalOcean(files.profileImage[0]);
+    profileImage = uploaded.Location;
+  }
+  if (files?.licenseFrontSide?.[0]) {
+    const uploaded = await fileUploader.uploadToDigitalOcean(files.licenseFrontSide[0]);
+    licenseFrontSide = uploaded.Location;
+  }
+  if (files?.licenseBackSide?.[0]) {
+    const uploaded = await fileUploader.uploadToDigitalOcean(files.licenseBackSide[0]);
+    licenseBackSide = uploaded.Location;
+  }
+  if (files?.vehicleImage?.[0]) {
+    const uploaded = await fileUploader.uploadToDigitalOcean(files.vehicleImage[0]);
+    vehicleImage = uploaded.Location;
+  }
+
+  
+ let genderValue: Gender | undefined = undefined;
+
+if (profileData.gender && profileData.gender.trim() !== "") {
+  if (Object.values(Gender).includes(profileData.gender as Gender)) {
+    genderValue = profileData.gender as Gender;
+  } else {
+    throw new ApiError(400, "Invalid gender value");
+  }
+}
+  // Transaction: Profile + License + Vehicle → সব একসাথে
+  const result = await prisma.$transaction(async (tx) => {
+    // 1. Update User Profile + License
+    const updatedUser = await tx.user.update({
+      where: { id: userId },
+      data: {
+        ...profileData,
+        gender:genderValue,
+        profileImage: profileImage || user.profileImage,
+        licenseFrontSide: licenseFrontSide || user.licenseFrontSide,
+        licenseBackSide: licenseBackSide || user.licenseBackSide,
+        updatedAt: new Date(),
+      },
+    });
+
+    // 2. Create Vehicle
+    const createdVehicle = await tx.vehicle.create({
+      data: {
+        ...vehicleData,
+        image: vehicleImage,
+        userId: userId,
+      },
+    });
+
+    return { updatedUser, createdVehicle };
+  });
+
+  return result;
+};
+
+ const getDriverOnboarding = async (userId: string) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      fullName: true,
+      dob: true,
+      gender: true,
+      phoneNumber: true,
+      profileImage: true,
+      licenseFrontSide: true,
+      licenseBackSide: true,
+      role: true,
+      adminApprovedStatus: true,
+    },
+  });
+
+  if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+
+  if (user.role !== "DRIVER") {
+    throw new ApiError(httpStatus.FORBIDDEN, "Only drivers can access this data");
+  }
+
+  const vehicles = await prisma.vehicle.findMany({
+    where: { userId },
+    select: {
+      id: true,
+      manufacturer: true,
+      model: true,
+      year: true,
+      color: true,
+      licensePlateNumber: true,
+      bh: true,
+      refferalCode: true,
+      image: true,
+    },
+  });
+
+  return { user, vehicles };
+};
+
+
 
 // const postDemoVideo = async (file: any, userId: string) => {
 
@@ -590,5 +710,7 @@ export const userService = {
   getDriversPendingApproval,
   toggleUserOnlineStatus,
   toggleNotificationOnOff,
+  driverOnboarding,
+  getDriverOnboarding
   // postDemoVideo
 };
