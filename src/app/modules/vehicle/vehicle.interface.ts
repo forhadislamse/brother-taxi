@@ -28,6 +28,6 @@ export interface IVehicleFilters {
   color?: string;
   licensePlateNumber?: string;
   bh?: string;
-  reversalCode?: string;
+  // reversalCode?: string;
   isActive?: boolean | string;
 }

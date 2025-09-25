@@ -46,7 +46,7 @@ const createVehicle = catchAsync(async (req, res) => {
     color,
     licensePlateNumber,
     bh,
-    refferalCode,
+    // refferalCode,
   } = updateData;
 
   if (!manufacturer || !model || !year || !color || !licensePlateNumber) {
@@ -60,7 +60,7 @@ const createVehicle = catchAsync(async (req, res) => {
     color,
     licensePlateNumber,
     bh,
-    refferalCode,
+    // refferalCode,
   };
 
   // Upload image if provided

@@ -8,7 +8,7 @@ import prisma from "../../../shared/prisma";
 import { jwtHelpers } from "../../../helpars/jwtHelpers";
 import { IUser, IUserFilters } from "./user.interface";
 import { Secret } from "jsonwebtoken";
-import { generateOtp } from "../../../shared/getTransactionId";
+import { generateOtp, generateReferralCode } from "../../../shared/getTransactionId";
 import { sendMessage } from "../../../shared/sendMessage";
 import { get, omit } from "lodash";
 
@@ -93,6 +93,78 @@ import { get, omit } from "lodash";
 // // get user profile
 
 
+// const createUserIntoDb = async (payload: User) => {
+//   // check existing user
+//   let existingUser = await prisma.user.findFirst({
+//     where: { phoneNumber: payload.phoneNumber },
+//   });
+
+//   // otp generate
+//   const otp = generateOtp(4);
+//   const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+//   let user;
+
+//   if (existingUser) {
+//     if (existingUser.isPhoneNumberVerify === false) {
+      
+//       // পুরানো unverified user এর OTP update হবে
+//       user = await prisma.user.update({
+//         where: { id: existingUser.id },
+//         data: {
+//           otp,
+//           otpExpiresAt: otpExpiry,
+//           referralCode: generateReferralCode(),
+//         },
+//         select: {
+//           id: true,
+//           phoneNumber: true,
+//           role: true,
+//           otp: true,
+//           referralCode:true,
+//           createdAt: true,
+//           updatedAt: true,
+//         },
+//       });
+//     } else {
+//       throw new ApiError(
+//         httpStatus.BAD_REQUEST,
+//         `User with this phone number ${payload.phoneNumber} already exists`
+//       );
+//     }
+//   } else {
+//     // একদম নতুন user create
+//     user = await prisma.user.create({
+//       data: {
+//         phoneNumber: payload.phoneNumber,
+//         role: payload.role,
+//         otp,
+//         otpExpiresAt: otpExpiry,
+//       },
+//       select: {
+//         id: true,
+//         phoneNumber: true,
+//         role: true,
+//         otp: true,
+//         createdAt: true,
+//         updatedAt: true,
+//       },
+//     });
+//   }
+
+//   console.log("✅ User created/updated with phone:", payload.phoneNumber);
+
+//   // otp send
+//   try {
+//     const messageBody = `Here is your OTP code: ${otp}. It will expire in 5 minutes.`;
+//     await sendMessage(messageBody, payload.phoneNumber);
+//   } catch (error) {
+//     console.error("❌ Failed to send OTP:", error);
+//   }
+
+//   return user;
+// };
+
 const createUserIntoDb = async (payload: User) => {
   // check existing user
   let existingUser = await prisma.user.findFirst({
@@ -113,12 +185,15 @@ const createUserIntoDb = async (payload: User) => {
         data: {
           otp,
           otpExpiresAt: otpExpiry,
+          // যদি আগেই referral না থাকে, তবে জেনারেট করবো
+          referralCode: existingUser.referralCode ?? generateReferralCode(),
         },
         select: {
           id: true,
           phoneNumber: true,
           role: true,
           otp: true,
+          referralCode: true,
           createdAt: true,
           updatedAt: true,
         },
@@ -130,19 +205,21 @@ const createUserIntoDb = async (payload: User) => {
       );
     }
   } else {
-    // একদম নতুন user create
+    // একদম নতুন user create → referralCode auto generate করতে হবে
     user = await prisma.user.create({
       data: {
         phoneNumber: payload.phoneNumber,
         role: payload.role,
         otp,
         otpExpiresAt: otpExpiry,
+        referralCode: generateReferralCode(), 
       },
       select: {
         id: true,
         phoneNumber: true,
         role: true,
         otp: true,
+        referralCode: true, 
         createdAt: true,
         updatedAt: true,
       },
@@ -161,6 +238,7 @@ const createUserIntoDb = async (payload: User) => {
 
   return user;
 };
+
 
 
 const getMyProfile = async (userToken: string) => {
@@ -450,7 +528,7 @@ if (profileData.gender && profileData.gender.trim() !== "") {
       color: true,
       licensePlateNumber: true,
       bh: true,
-      refferalCode: true,
+      // refferalCode: true,
       image: true,
     },
   });
