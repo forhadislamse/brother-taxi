@@ -1,32 +1,57 @@
-// import express from "express";
-// import auth from "../../middlewares/auth";
-// import { notificationController } from "./Notification.controller";
+// Notification.routes: Module file for the Notification.routes functionality.
+import express from "express";
+import auth from "../../middlewares/auth";
+import { NotificationController } from "./Notification.controller";
 
-// const router = express.Router();
 
-// router.post(
-//   "/send-notification/:receiverId",
-//   auth(),
-//   notificationController.sendNotification
-// );
+const router = express.Router();
 
-// // router.post(
-// //   "/send-notification",
-// //   auth(),
-// //   notificationController.sendNotifications
-// // );
+router.post(
+  "/send-to-selected",
 
-// router.get("/", auth(), notificationController.getNotifications);
-// router.get(
-//   "/:notificationId",
-//   auth(),
-//   notificationController.getSingleNotificationById
-// );
+  auth(),
+  NotificationController.sendNotificationToSelectedUsersController
+);
 
-// router.delete(
-//   "/:notificationId",
-//   auth(),
-//   notificationController.deleteNotification
-// );
+router.post(
+  "/send",
+  auth(),
+  NotificationController.sendNotificationToUser
+);
 
-// export const notificationsRoute = router;
+// Get all notifications
+router.get(
+  "/",
+  auth(),
+  NotificationController.getAllNotificationsController
+);
+
+// Get notifications by user ID
+router.get(
+  "/get",
+  auth(),
+  NotificationController.getNotificationByUserIdController
+);
+
+// Mark notifications as read by user ID
+router.put(
+  "/read",
+  auth(),
+  NotificationController.readNotificationByUserIdController
+);
+
+// Delete notification by id
+router.delete(
+  "/delete/:id",
+  auth(),
+  NotificationController.deleteNotificationByIdController
+);
+
+// Delete all notifications for the authenticated user
+router.delete(
+  "/delete-all",
+  auth(),
+  NotificationController.deleteAllNotificationsController
+);
+
+export const NotificationRoutes = router;

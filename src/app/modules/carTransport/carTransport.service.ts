@@ -332,7 +332,7 @@ const getRideDetailsById = async (rideId: string, ) => {
           model: true,
           licensePlateNumber: true,
           bh: true,
-          refferalCode: true,
+          // refferalCode: true,
           image: true,
           color: true,
           driver: { // vehicle এর driver info
@@ -417,7 +417,7 @@ const getCarTransportById = async (
           model: true,
           licensePlateNumber: true,
           bh: true,
-          refferalCode: true,
+          // refferalCode: true,
           image: true,
           color: true,
           driver: { // vehicle এর driver info
@@ -530,7 +530,7 @@ const getNewCarTransportsReq = async (
           model: true,
           licensePlateNumber: true,
           bh: true,
-          refferalCode: true,
+          // refferalCode: true,
           image: true,
           color: true,
           driver: { // vehicle এর driver info
@@ -750,7 +750,7 @@ const getMyRides = async (userId: string, role: UserRole) => {
             model: true,
             licensePlateNumber: true,
             bh: true,
-            refferalCode: true,
+            // refferalCode: true,
             image: true,
             color: true,
             driver: {
@@ -825,7 +825,7 @@ const getMyRides = async (userId: string, role: UserRole) => {
             model: true,
             licensePlateNumber: true,
             bh: true,
-            refferalCode: true,
+            // refferalCode: true,
             image: true,
             color: true,
             driver: {
@@ -880,7 +880,7 @@ const getRideHistory = async (userId: string, role: UserRole) => {
             model: true,
             licensePlateNumber: true,
             bh: true,
-            refferalCode: true,
+            // refferalCode: true,
             image: true,
             color: true,
             driver: {
@@ -928,7 +928,7 @@ const getRideHistory = async (userId: string, role: UserRole) => {
             model: true,
             licensePlateNumber: true,
             bh: true,
-            refferalCode: true,
+            // refferalCode: true,
             image: true,
             color: true,
             driver: {
@@ -1258,7 +1258,7 @@ const getAllCarTransports = async (
           model: true,
           licensePlateNumber: true,
           bh: true,
-          refferalCode: true,
+          // refferalCode: true,
           image: true,
           color: true,
           driver: { // vehicle এর driver info
@@ -1522,7 +1522,7 @@ const assignDriver = async (payload: IAssignDriverReq) => {
           model: true,
           licensePlateNumber: true,
           bh: true,
-          refferalCode: true,
+          // refferalCode: true,
           image: true,
           color: true,
           driver: { // vehicle এর driver info
@@ -1609,7 +1609,7 @@ const handleDriverResponse = async (
           model: true,
           licensePlateNumber: true,
           bh: true,
-          refferalCode: true,
+          // refferalCode: true,
           image: true,
           color: true,
           driver: { // vehicle এর driver info
@@ -1681,7 +1681,7 @@ const confirmArrival = async (
           model: true,
           licensePlateNumber: true,
           bh: true,
-          refferalCode: true,
+          // refferalCode: true,
           image: true,
           color: true,
           driver: { // vehicle এর driver info
@@ -1752,7 +1752,7 @@ const startJourney = async (userToken: string, payload: IStartJourneyReq) => {
           model: true,
           licensePlateNumber: true,
           bh: true,
-          refferalCode: true,
+          // refferalCode: true,
           image: true,
           color: true,
           driver: { // vehicle এর driver info
@@ -1829,7 +1829,7 @@ const completeJourney = async (
           model: true,
           licensePlateNumber: true,
           bh: true,
-          refferalCode: true,
+          // refferalCode: true,
           image: true,
           color: true,
           driver: { // vehicle এর driver info
