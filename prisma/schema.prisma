@@ -217,37 +217,12 @@ model User {
   paymentsSent     Payment[]      @relation("PaymentSender")
   paymentsReceived Payment[]      @relation("PaymentReceiver")
   savedCards       SavedCard[]
+  ridePlan ridePlan[]
 
   @@map("users")
 }
 
-// model Wallet {
-//   id      String @id @default(auto()) @map("_id") @db.ObjectId
-//   balance Float  @default(0)
-//   userId  String @unique @db.ObjectId
-//   user    User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
-//   @@map("wallets")
-// }
-
-// model Ride {
-//   id              String     @id @default(auto()) @map("_id") @db.ObjectId
-//   distance        Float
-//   fare            Float
-//   startTime       DateTime
-//   endTime         DateTime?
-//   status          RideStatus
-//   pickupLocation  String
-//   dropoffLocation String
-//   riderId         String     @db.ObjectId
-//   driverId        String?    @db.ObjectId
-//   rider           User       @relation("RiderRides", fields: [riderId], references: [id])
-//   driver          User?      @relation("DriverRides", fields: [driverId], references: [id])
-//   reviews         Review[]
-//   createdAt       DateTime   @default(now())
-
-//   @@map("rides")
-// }
 
 model CarTransport {
   id        String @id @default(auto()) @map("_id") @db.ObjectId
@@ -305,6 +280,10 @@ model CarTransport {
   updatedAt DateTime @updatedAt
 
   // ───── Relations
+  ridePlanId  String?     @db.ObjectId   // <-- connect to ridePlan
+
+  // Relations
+  ridePlan    ridePlan?   @relation(fields: [ridePlanId], references: [id])
   user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
   vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   driver  User?   @relation("Driver", fields: [assignedDriver], references: [id], onDelete: Cascade)
@@ -317,6 +296,36 @@ model CarTransport {
 
   @@map("carTransports")
 }
+
+model ridePlan {
+  id            String   @id @default(auto()) @map("_id") @db.ObjectId
+  userId        String   @db.ObjectId          // the rider/user who requested the plan
+  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Pickup & Drop-off names
+  pickup        String
+  dropOff       String
+
+  // Coordinates
+  pickupLat     Float
+  pickupLng     Float
+  dropOffLat    Float
+  dropOffLng    Float
+
+  // Ride info
+  rideTime      Float   @default(0)
+  waitingTime   Float   @default(0)
+  distance      Float
+  estimatedFare Float
+  serviceType   String
+
+  carTransport CarTransport[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+}
+
 
 model Chat {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId

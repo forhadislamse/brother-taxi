@@ -594,9 +594,14 @@ const driverLoginService = async (accessToken: string) => {
 };
 
 // Update current location
-const updateUserLocation = async (userId: string, lat: number, lng: number) => {
+const updateUserLocation = async (userToken: string, lat: number, lng: number) => {
+  const decodedToken = jwtHelpers.verifyToken(
+      userToken,
+      config.jwt.jwt_secret!
+    );
+    const userId = decodedToken.id; 
   return await prisma.user.update({
-    where: { id: userId },
+    where: { id:userId },
     data: { lat, lng },
   });
 };

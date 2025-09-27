@@ -6,107 +6,28 @@ import prisma from "../../../shared/prisma";
 import ApiError from "../../../errors/ApiErrors";
 import { calculateDistance } from "../../../shared/calculateDistance";
 import { findNearbyDrivers } from "../../../shared/findNearByDrivers";
-import { CarTransport, PaymentStatus, Prisma, RideType, TransportStatus, UserRole } from "@prisma/client";
+import {
+  CarTransport,
+  PaymentStatus,
+  Prisma,
+  RideType,
+  TransportStatus,
+  UserRole,
+} from "@prisma/client";
 import { paginationHelper } from "../../../helpars/paginationHelper";
 import { IGenericResponse } from "../vehicle/vehicle.interface";
 import { IPaginationOptions } from "../../../interfaces/paginations";
-import { IAssignDriverReq, ICarTransportFilters, ICompleteJourneyReq, IConfirmArrivalReq, IDriverIncomeResponse, IDriverJobFilters, IDriverResponseReq, IStartJourneyReq } from "./carTransport.interface";
+import {
+  IAssignDriverReq,
+  ICarTransportFilters,
+  ICompleteJourneyReq,
+  IConfirmArrivalReq,
+  IDriverIncomeResponse,
+  IDriverJobFilters,
+  IDriverResponseReq,
+  IStartJourneyReq,
+} from "./carTransport.interface";
 
-// async function calculateFareFromConfig(distance: number) {
-//   const activeFare = await prisma.fare.findFirst({
-//     where: { isActive: true },
-//     orderBy: { createdAt: "desc" },
-//   });
-//   if (!activeFare) throw new Error("Active Fare not found");
-
-//   const basePrice = activeFare.baseFare; // 40
-//   const perKm = activeFare.costPerKm; // 10
-//   console.log(basePrice, perKm, distance);
-
-//   return basePrice + perKm * distance;
-// }
-
-// // Service function
-// export const createCarTransport = async (token: string, payload: any, files: any[]) => {
-//   // 1️⃣ Token decode (userId বের করা)
-//   const decodedToken = jwtHelpers.verifyToken(token, config.jwt.jwt_secret!);
-//   const userId = decodedToken.id;
-
-//   // 2️⃣ Vehicle check
-//   const vehicle = await prisma.vehicle.findUnique({
-//     where: { id: payload.vehicleId },
-//   });
-//   if (!vehicle) throw new Error("Vehicle not found");
-
-//   // 3️⃣ Distance calculation
-//   const distance = calculateDistance(
-//     payload.pickupLat,
-//     payload.pickupLng,
-//     payload.dropOffLat,
-//     payload.dropOffLng
-//   );
-
-//   // 4️⃣ Fare calculation
-//   const totalAmount = await calculateFareFromConfig(distance);
-
-//   // 5️⃣ Image upload
-//   const uploadedImages = await Promise.all(
-//     files.map((file) => fileUploader.uploadToDigitalOcean(file))
-//   );
-
-//   // 6️⃣ DB create
-//   const carTransport = await prisma.carTransport.create({
-//     data: {
-//       ...payload,
-//       userId,
-//       totalAmount,
-//       beforePickupImages: uploadedImages.map((img) => img.Location),
-//       // driverLat/driverLng দিয়ে কিছু পাঠাবেন না
-//     },
-//   });
-
-//   return carTransport;
-// };
-
-// const getListFromDb = async () => {
-
-//     const result = await prisma.carTransport.findMany();
-//     return result;
-// };
-
-// const getByIdFromDb = async (id: string) => {
-
-//     const result = await prisma.carTransport.findUnique({ where: { id } });
-//     if (!result) {
-//       throw new Error('CarTransport not found');
-//     }
-//     return result;
-//   };
-
-// const updateIntoDb = async (id: string, data: any) => {
-//   const transaction = await prisma.$transaction(async (prisma) => {
-//     const result = await prisma.carTransport.update({
-//       where: { id },
-//       data,
-//     });
-//     return result;
-//   });
-
-//   return transaction;
-// };
-
-// const deleteItemFromDb = async (id: string) => {
-//   const transaction = await prisma.$transaction(async (prisma) => {
-//     const deletedItem = await prisma.carTransport.delete({
-//       where: { id },
-//     });
-
-//     // Add any additional logic if necessary, e.g., cascading deletes
-//     return deletedItem;
-//   });
-
-//   return transaction;
-// };
 
 export async function calculateFareFromConfig(
   distance: number,
@@ -166,6 +87,178 @@ export async function calculateFareFromConfig(
 }
 
 
+// const planCarTransport = async (payload: any) => {
+//   const {pickup,dropOff, pickupLat, pickupLng, dropOffLat, dropOffLng } = payload;
+
+//   if (!pickupLat || !pickupLng || !dropOffLat || !dropOffLng) {
+//     throw new Error("Pickup and drop-off coordinates are required");
+//   }
+
+//   //  Distance
+//   const distance = calculateDistance(
+//     pickupLat,
+//     pickupLng,
+//     dropOffLat,
+//     dropOffLng
+//   );
+
+//   //  Service type
+//   const serviceType: RideType =
+//     distance < 10 ? RideType.MiniRide : RideType.LongRide;
+
+//   //  Ride time & waiting time
+//   const rideTime = payload.rideTime ? Number(payload.rideTime) : 0;
+//   const waitingTime = payload.waitingTime ? Number(payload.waitingTime) : 0;
+
+//   //  Fare
+//   const { totalFare } = await calculateFareFromConfig(
+//     distance,
+//     rideTime,
+//     waitingTime
+//   );
+
+//   //  Nearby drivers
+//   const nearbyDrivers = await findNearbyDrivers(pickupLat, pickupLng);
+
+//   //  Map nearby drivers with vehicle info
+//   const nearbyDriversWithVehicle = await Promise.all(
+//     nearbyDrivers.map(async (driver) => {
+//       const vehicle = await prisma.vehicle.findFirst({
+//         where: { userId: driver.id, isActive: true },
+//       });
+
+//       return {
+//         id: driver.id,
+//         fullName: driver.fullName || "",
+//         lat: driver.lat!,
+//         lng: driver.lng!,
+//         vehicleId: vehicle?.id || null,
+//         vehicleName: vehicle
+//           ? `${vehicle.manufacturer} ${vehicle.model}`
+//           : null,
+//         distance: calculateDistance(
+//           pickupLat,
+//           pickupLng,
+//           driver.lat!,
+//           driver.lng!
+//         ),
+//       };
+//     })
+//   );
+
+//   return {
+//     pickup,
+//     dropOff,
+//     pickupLat,
+//     pickupLng,
+//     dropOffLat,
+//     dropOffLng,
+//     estimatedFare: totalFare,
+//     distance,
+//     serviceType,
+//     rideTime,
+//     waitingTime,
+//     nearbyDrivers: nearbyDriversWithVehicle,
+//   };
+// };
+
+
+
+const planCarTransport = async (userId: string, payload: any) => {
+  const { pickup, dropOff, pickupLat, pickupLng, dropOffLat, dropOffLng } = payload;
+
+  if (!pickupLat || !pickupLng || !dropOffLat || !dropOffLng) {
+    throw new Error("Pickup and drop-off coordinates are required");
+  }
+
+  // Distance
+  const distance = calculateDistance(pickupLat, pickupLng, dropOffLat, dropOffLng);
+
+  // Service type
+  const serviceType: RideType = distance < 10 ? RideType.MiniRide : RideType.LongRide;
+
+  // Ride time & waiting time
+  const rideTime = payload.rideTime ? Number(payload.rideTime) : 0;
+  const waitingTime = payload.waitingTime ? Number(payload.waitingTime) : 0;
+
+  // Fare
+  const { totalFare } = await calculateFareFromConfig(distance, rideTime, waitingTime);
+
+  // Nearby drivers (dynamic, not saved in DB)
+  const nearbyDriversRaw = await findNearbyDrivers(pickupLat, pickupLng);
+  const nearbyDrivers = await Promise.all(
+    nearbyDriversRaw.map(async (driver) => {
+      const vehicle = await prisma.vehicle.findFirst({
+        where: { userId: driver.id, isActive: true },
+      });
+
+      return {
+        id: driver.id,
+        fullName: driver.fullName || "",
+        lat: driver.lat!,
+        lng: driver.lng!,
+        vehicleId: vehicle?.id || null,
+        vehicleName: vehicle ? `${vehicle.manufacturer} ${vehicle.model}` : null,
+        distance: calculateDistance(pickupLat, pickupLng, driver.lat!, driver.lng!),
+      };
+    })
+  );
+
+  // ✅ Save plan to DB
+  const savedPlan = await prisma.ridePlan.create({
+    data: {
+      userId,
+      pickup,
+      dropOff,
+      pickupLat,
+      pickupLng,
+      dropOffLat,
+      dropOffLng,
+      rideTime,
+      waitingTime,
+      distance,
+      estimatedFare: totalFare,
+      serviceType,
+    },
+  });
+
+  // Return saved plan + nearby drivers
+  return {
+    ridePlan: savedPlan,
+    nearbyDrivers,
+  };
+};
+
+const getMyRidePlans = async (userId: string) => {
+  // Fetch ride plans for the logged-in user
+  const ridePlans = await prisma.ridePlan.findMany({
+    where: { userId },
+    orderBy: { createdAt: "desc" },
+    include: {
+      carTransport: true, // Include car transport info if created
+    },
+  });
+
+  return ridePlans;
+};
+
+const getRidePlanById = async (userId: string, planId: string) => {
+  const ridePlan = await prisma.ridePlan.findFirst({
+    where: {
+      id: planId,
+      userId, // ensures only the owner can fetch
+    },
+    include: {
+      carTransport: true, // include associated car transports
+    },
+  });
+
+  if (!ridePlan) throw new Error("Ride plan not found");
+
+  return ridePlan;
+};
+
+
 // const createCarTransport = async (
 //   token: string,
 //   payload: any,
@@ -179,7 +272,7 @@ export async function calculateFareFromConfig(
 //   });
 //   if (!vehicle) throw new Error("Vehicle not found");
 
-//   // 1️⃣ Distance calculate
+//   // Distance
 //   const distance = calculateDistance(
 //     payload.pickupLat,
 //     payload.pickupLng,
@@ -187,39 +280,47 @@ export async function calculateFareFromConfig(
 //     payload.dropOffLng
 //   );
 
-//   // 2️⃣ Ride time & waiting time
-//   const rideTime = payload.rideTime ? Number(payload.rideTime) : 20;
+//   const serviceType: RideType =
+//     distance < 10 ? RideType.MiniRide : RideType.LongRide;
+
+//   // Ride time & waiting time
+//   const rideTime = payload.rideTime ? Number(payload.rideTime) : 0;
 //   const waitingTime = payload.waitingTime ? Number(payload.waitingTime) : 0;
 
-//   // 3️⃣ Fare calculate
+//   // Fare
 //   const { totalFare } = await calculateFareFromConfig(
 //     distance,
 //     rideTime,
 //     waitingTime
 //   );
 
-//   // 4️⃣ Image upload
+//   // Upload images
 //   const uploadedImages = await Promise.all(
 //     files.map((file) => fileUploader.uploadToDigitalOcean(file))
 //   );
 
-//   // 5️⃣ Save ride in DB
+//   // Save ride
 //   const carTransport = await prisma.carTransport.create({
 //     data: {
 //       ...payload,
 //       userId,
 //       totalAmount: totalFare,
+//       distance,
+//       serviceType,
 //       beforePickupImages: uploadedImages.map((img) => img.Location),
 //     },
 //   });
 
-//   // 6️⃣ Nearby drivers খুঁজে বের করা
+//   // Find nearby drivers
 //   let nearbyDrivers: any[] = [];
 //   if (payload.pickupLat && payload.pickupLng) {
-//     nearbyDrivers = await findNearbyDrivers(payload.pickupLat, payload.pickupLng);
+//     nearbyDrivers = await findNearbyDrivers(
+//       payload.pickupLat,
+//       payload.pickupLng
+//     );
 //   }
 
-//   // 7️⃣ Return ride + nearby drivers
+//   // Return ride + nearby drivers
 //   return {
 //     ride: carTransport,
 //     nearbyDrivers: nearbyDrivers.map((driver) => ({
@@ -239,65 +340,78 @@ export async function calculateFareFromConfig(
 //   };
 // };
 
-const createCarTransport = async (token: string, payload: any, files: any[]) => {
+const createCarTransport = async (
+  token: string,
+  payload: any,
+  files: any[]
+) => {
   const decodedToken = jwtHelpers.verifyToken(token, config.jwt.jwt_secret!);
   const userId = decodedToken.id;
 
+  if (!payload.ridePlanId) throw new Error("ridePlanId is required");
+
+  // Fetch ride plan
+  const ridePlan = await prisma.ridePlan.findUnique({
+    where: { id: payload.ridePlanId },
+  });
+  if (!ridePlan) throw new Error("Ride plan not found");
+
+  // Fetch vehicle
   const vehicle = await prisma.vehicle.findUnique({
     where: { id: payload.vehicleId },
   });
   if (!vehicle) throw new Error("Vehicle not found");
 
-  // Distance
-  const distance = calculateDistance(payload.pickupLat, payload.pickupLng, payload.dropOffLat, payload.dropOffLng);
-  
-  const serviceType: RideType = distance < 10 ? RideType.MiniRide : RideType.LongRide;
+  // Calculate fare & distance using ridePlan to avoid mismatch
+  const distance = ridePlan.distance;
+  const serviceType: RideType = ridePlan.serviceType as RideType;
+  const rideTime = ridePlan.rideTime;
+  const waitingTime = ridePlan.waitingTime;
+  const totalFare = ridePlan.estimatedFare;
 
-  // Ride time & waiting time
-  const rideTime = payload.rideTime ? Number(payload.rideTime) : 20;
-  const waitingTime = payload.waitingTime ? Number(payload.waitingTime) : 0;
-
-  // Fare
-  const { totalFare } = await calculateFareFromConfig(distance, rideTime, waitingTime);
+// Pickup time & date
+  const pickupDate = payload.pickupDate?.trim() || null;
+  const pickupTime = payload.pickupTime?.trim() || null;
 
   // Upload images
-  const uploadedImages = await Promise.all(files.map(file => fileUploader.uploadToDigitalOcean(file)));
+  const uploadedImages = await Promise.all(
+    files.map((file) => fileUploader.uploadToDigitalOcean(file))
+  );
 
-  // Save ride
+  // Save car transport
   const carTransport = await prisma.carTransport.create({
     data: {
-      ...payload,
       userId,
-      totalAmount: totalFare,
+      pickupTime,
+      pickupDate,
+      vehicleId: vehicle.id,
+      ridePlanId: ridePlan.id, // <-- link transport to ride plan
+      pickupLocation: ridePlan.pickup,
+      dropOffLocation: ridePlan.dropOff,
+      pickupLat: ridePlan.pickupLat,
+      pickupLng: ridePlan.pickupLng,
+      dropOffLat: ridePlan.dropOffLat,
+      dropOffLng: ridePlan.dropOffLng,
+      
       distance,
+      totalAmount: totalFare,
       serviceType,
-      beforePickupImages: uploadedImages.map(img => img.Location),
+      rideTime,
+      waitingTime,
+      beforePickupImages: uploadedImages.map((img) => img.Location),
+      // assignedDriver: vehicle.userId, // assign driver if applicable
     },
   });
 
-  // Find nearby drivers
-  let nearbyDrivers: any[] = [];
-  if (payload.pickupLat && payload.pickupLng) {
-    nearbyDrivers = await findNearbyDrivers(payload.pickupLat, payload.pickupLng);
-  }
-
-  // Return ride + nearby drivers
-  return {
-    ride: carTransport,
-    nearbyDrivers: nearbyDrivers.map(driver => ({
-      id: driver.id,
-      fullName: driver.fullName,
-      phone: driver.phone,
-      profileImage: driver.profileImage,
-      lat: driver.lat,
-      lng: driver.lng,
-      distance: calculateDistance(payload.pickupLat, payload.pickupLng, driver.lat!, driver.lng!),
-    })),
-  };
+  return { carTransport };
 };
 
 
-const cancelRide = async (userId: string, rideId: string, cancelReason: string) => {
+const cancelRide = async (
+  userId: string,
+  rideId: string,
+  cancelReason: string
+) => {
   const ride = await prisma.carTransport.findUnique({ where: { id: rideId } });
 
   if (!ride) throw new ApiError(httpStatus.NOT_FOUND, "Ride not found");
@@ -311,9 +425,9 @@ const cancelRide = async (userId: string, rideId: string, cancelReason: string) 
       cancelReason,
     },
   });
-}
+};
 
-const getRideDetailsById = async (rideId: string, ) => {
+const getRideDetailsById = async (rideId: string) => {
   const ride = await prisma.carTransport.findUnique({
     where: { id: rideId },
     include: {
@@ -335,7 +449,8 @@ const getRideDetailsById = async (rideId: string, ) => {
           // refferalCode: true,
           image: true,
           color: true,
-          driver: { // vehicle এর driver info
+          driver: {
+            // vehicle এর driver info
             select: {
               id: true,
               fullName: true,
@@ -360,7 +475,7 @@ const getRideDetailsById = async (rideId: string, ) => {
   // }
 
   return ride;
-}   
+};
 
 const getCompletedRideFromDb = async (rideId: string, userId: string) => {
   const ride = await prisma.carTransport.findUnique({
@@ -381,7 +496,10 @@ const getCompletedRideFromDb = async (rideId: string, userId: string) => {
 
   // Ensure only the rider who booked can view
   if (ride.userId !== userId) {
-    throw new ApiError(httpStatus.FORBIDDEN, "Not authorized to view this ride");
+    throw new ApiError(
+      httpStatus.FORBIDDEN,
+      "Not authorized to view this ride"
+    );
   }
 
   if (ride.status !== "COMPLETED") {
@@ -391,9 +509,7 @@ const getCompletedRideFromDb = async (rideId: string, userId: string) => {
   return ride;
 };
 
-const getCarTransportById = async (
-  id: string
-): Promise<any | null> => {
+const getCarTransportById = async (id: string): Promise<any | null> => {
   const result = await prisma.carTransport.findUnique({
     where: {
       id,
@@ -420,7 +536,8 @@ const getCarTransportById = async (
           // refferalCode: true,
           image: true,
           color: true,
-          driver: { // vehicle এর driver info
+          driver: {
+            // vehicle এর driver info
             select: {
               id: true,
               fullName: true,
@@ -460,7 +577,10 @@ const getCarTransportById = async (
   }
 
   // Combine and remove duplicates
-  const allNearbyDrivers = [...nearbyDriversFromPickup, ...nearbyDriversFromUser];
+  const allNearbyDrivers = [
+    ...nearbyDriversFromPickup,
+    ...nearbyDriversFromUser,
+  ];
   const uniqueDrivers = Array.from(
     new Map(allNearbyDrivers.map((driver) => [driver.id, driver])).values()
   );
@@ -533,7 +653,8 @@ const getNewCarTransportsReq = async (
           // refferalCode: true,
           image: true,
           color: true,
-          driver: { // vehicle এর driver info
+          driver: {
+            // vehicle এর driver info
             select: {
               id: true,
               fullName: true,
@@ -545,7 +666,6 @@ const getNewCarTransportsReq = async (
           },
         },
       },
-      
     },
     skip,
     take: limit,
@@ -577,7 +697,10 @@ const getNewCarTransportsReq = async (
       }
 
       // Combine and remove duplicates
-      const allNearbyDrivers = [...nearbyDriversFromPickup, ...nearbyDriversFromUser];
+      const allNearbyDrivers = [
+        ...nearbyDriversFromPickup,
+        ...nearbyDriversFromUser,
+      ];
       const uniqueDrivers = Array.from(
         new Map(allNearbyDrivers.map((driver) => [driver.id, driver])).values()
       );
@@ -592,7 +715,10 @@ const getNewCarTransportsReq = async (
           lat: driver.lat,
           lng: driver.lng,
           distanceFromPickup:
-            transport.pickupLat && transport.pickupLng && driver.lat && driver.lng
+            transport.pickupLat &&
+            transport.pickupLng &&
+            driver.lat &&
+            driver.lng
               ? calculateDistance(
                   transport.pickupLat,
                   transport.pickupLng,
@@ -627,8 +753,6 @@ const getNewCarTransportsReq = async (
     data: transportWithDrivers,
   };
 };
-
-
 
 // const getMyRides = async (userId: string,) => {
 //   // প্রথমে ride গুলো fetch করো
@@ -700,9 +824,6 @@ const getNewCarTransportsReq = async (
 //   return ridesWithNearby;
 // };
 
-
-
-
 // const updateUserCountStats = async (userId: string) => {
 //   const stats = await prisma.carTransport.aggregate({
 //     where: { userId: userId, status: TransportStatus.COMPLETED },
@@ -713,7 +834,7 @@ const getNewCarTransportsReq = async (
 //   const updateUser=await prisma.user.update({
 //     where: { id: userId },
 //     data: {
-      
+
 //       totalRides: stats._count.id,
 //     },
 //   });
@@ -721,7 +842,6 @@ const getNewCarTransportsReq = async (
 // };
 
 // শুধু count বের করার service
-
 
 const getMyRides = async (userId: string, role: UserRole) => {
   let rides = [];
@@ -774,7 +894,10 @@ const getMyRides = async (userId: string, role: UserRole) => {
         let nearbyDrivers: any[] = [];
 
         if (ride.pickupLat && ride.pickupLng) {
-          const drivers = await findNearbyDrivers(ride.pickupLat, ride.pickupLng);
+          const drivers = await findNearbyDrivers(
+            ride.pickupLat,
+            ride.pickupLng
+          );
           nearbyDrivers = drivers.map((driver) => ({
             id: driver.id,
             fullName: driver.fullName,
@@ -904,7 +1027,7 @@ const getRideHistory = async (userId: string, role: UserRole) => {
       where: {
         assignedDriver: userId,
         status: {
-          in: [ TransportStatus.CANCELLED], // driver history
+          in: [TransportStatus.CANCELLED], // driver history
           // in: [TransportStatus.COMPLETED, TransportStatus.CANCELLED], // driver history
         },
       },
@@ -981,7 +1104,7 @@ const getDriverIncome = async (
     assignedDriver: decodedToken.id,
     assignedDriverReqStatus: "ACCEPTED",
     status: TransportStatus.COMPLETED,
-    paymentStatus: "COMPLETED",
+    paymentStatus: PaymentStatus.COMPLETED,
   };
 
   if (startDate && endDate) {
@@ -1013,13 +1136,15 @@ const getDriverIncome = async (
       distance: true,
       rideTime: true,
       serviceType: true,
+      status:true,
+      paymentStatus:true,
+      assignedDriverReqStatus:true,
       createdAt: true,
       user: {
         select: {
           id: true,
           fullName: true,
           profileImage: true,
-          
         },
       },
       vehicle: {
@@ -1027,13 +1152,13 @@ const getDriverIncome = async (
           id: true,
           manufacturer: true,
           model: true,
-          licensePlateNumber: true,
+          // licensePlateNumber: true,
           driver: {
             select: {
               id: true,
               fullName: true,
               phoneNumber: true,
-              profileImage:true,
+              profileImage: true,
             },
           },
         },
@@ -1045,12 +1170,10 @@ const getDriverIncome = async (
       [sortBy]: sortOrder,
     },
   });
-// format distance for each transaction
+  // format distance for each transaction
   const formattedTransactions = transactions.map((t) => ({
     ...t,
-    distance: t.distance
-      ? parseFloat(t.distance.toFixed(2))
-      : 0,
+    distance: t.distance ? parseFloat(t.distance.toFixed(2)) : 0,
   }));
   const total = await prisma.carTransport.count({
     where: whereConditions,
@@ -1073,7 +1196,6 @@ const getDriverIncome = async (
     },
   };
 };
-
 
 // const getMyRidesOrTripsCount = async (userId: string, role: "RIDER" | "DRIVER") => {
 //   if (role === "RIDER") {
@@ -1113,15 +1235,17 @@ const getDriverIncome = async (
 //   return { totalRides: 0, totalTrips: 0 };
 // };
 
-
-const getMyRidesOrTripsCount = async (userId: string, role: "RIDER" | "DRIVER") => {
+const getMyRidesOrTripsCount = async (
+  userId: string,
+  role: "RIDER" | "DRIVER"
+) => {
   if (role === "RIDER") {
     // Rider stats
     const riderStats = await prisma.carTransport.aggregate({
       where: {
         userId,
         status: TransportStatus.COMPLETED,
-        paymentStatus:PaymentStatus.COMPLETED
+        paymentStatus: PaymentStatus.COMPLETED,
       },
       _count: { id: true },
       _sum: {
@@ -1136,7 +1260,7 @@ const getMyRidesOrTripsCount = async (userId: string, role: "RIDER" | "DRIVER") 
 
     await prisma.user.update({
       where: { id: userId },
-      data: { totalRides, totalDistance},
+      data: { totalRides, totalDistance },
     });
 
     return { totalRides, totalDistance };
@@ -1148,20 +1272,18 @@ const getMyRidesOrTripsCount = async (userId: string, role: "RIDER" | "DRIVER") 
       where: {
         assignedDriver: userId,
         status: TransportStatus.COMPLETED,
-        paymentStatus:PaymentStatus.COMPLETED
-
+        paymentStatus: PaymentStatus.COMPLETED,
       },
       _count: { id: true },
       _sum: {
         distance: true,
-
       },
     });
 
     const totalTrips = driverStats._count.id || 0;
-    const totalDistance  = driverStats._sum.distance
+    const totalDistance = driverStats._sum.distance
       ? parseFloat(driverStats._sum.distance.toFixed(2))
-      : 0;;
+      : 0;
 
     await prisma.user.update({
       where: { id: userId },
@@ -1171,16 +1293,14 @@ const getMyRidesOrTripsCount = async (userId: string, role: "RIDER" | "DRIVER") 
     return { totalTrips, totalDistance };
   }
 
-  return { totalRides: 0, totalTrips: 0, totalDistance: 0};
+  return { totalRides: 0, totalTrips: 0, totalDistance: 0 };
 };
-
 
 const getAllCarTransports = async (
   filters: ICarTransportFilters,
   options: IPaginationOptions
 ): Promise<IGenericResponse<CarTransport[]>> => {
-  const { searchTerm, status, paymentStatus, ...filterData } =
-    filters;
+  const { searchTerm, status, paymentStatus, ...filterData } = filters;
   const { page, limit, skip, sortBy, sortOrder } =
     paginationHelper.calculatePagination(options);
 
@@ -1239,7 +1359,7 @@ const getAllCarTransports = async (
   const result = await prisma.carTransport.findMany({
     where: whereConditions,
     include: {
-     user: {
+      user: {
         select: {
           id: true,
           fullName: true,
@@ -1251,7 +1371,7 @@ const getAllCarTransports = async (
           lng: true,
         },
       },
-       vehicle: {
+      vehicle: {
         select: {
           id: true,
           manufacturer: true,
@@ -1261,7 +1381,8 @@ const getAllCarTransports = async (
           // refferalCode: true,
           image: true,
           color: true,
-          driver: { // vehicle এর driver info
+          driver: {
+            // vehicle এর driver info
             select: {
               id: true,
               fullName: true,
@@ -1321,8 +1442,6 @@ const getAllCarTransports = async (
 //   if (!result) {
 //     return null;
 //   }
-
-  
 
 //   // Fetch nearby technicians for this transport
 //   let nearbyTechsFromPickup: User[] = [];
@@ -1387,16 +1506,14 @@ const getAllCarTransports = async (
 //   return transportWithTechnicians;
 // };
 
-const getRideStatusById = async (
-  id: string
-) => {
+const getRideStatusById = async (id: string) => {
   const result = await prisma.carTransport.findUnique({
     where: {
       id,
     },
 
     select: {
-      arrivalConfirmation: true,             
+      arrivalConfirmation: true,
       journeyStarted: true,
       journeyCompleted: true,
     },
@@ -1525,7 +1642,8 @@ const assignDriver = async (payload: IAssignDriverReq) => {
           // refferalCode: true,
           image: true,
           color: true,
-          driver: { // vehicle এর driver info
+          driver: {
+            // vehicle এর driver info
             select: {
               id: true,
               fullName: true,
@@ -1542,7 +1660,6 @@ const assignDriver = async (payload: IAssignDriverReq) => {
 
   return result;
 };
-
 
 const handleDriverResponse = async (
   userToken: string,
@@ -1587,8 +1704,8 @@ const handleDriverResponse = async (
       status:
         response === "ACCEPTED"
           ? TransportStatus.ONGOING
-          // : TransportStatus.PENDING,
-          : TransportStatus.CANCELLED,
+          : // : TransportStatus.PENDING,
+            TransportStatus.CANCELLED,
     },
     include: {
       user: {
@@ -1612,7 +1729,8 @@ const handleDriverResponse = async (
           // refferalCode: true,
           image: true,
           color: true,
-          driver: { // vehicle এর driver info
+          driver: {
+            // vehicle এর driver info
             select: {
               id: true,
               fullName: true,
@@ -1684,7 +1802,8 @@ const confirmArrival = async (
           // refferalCode: true,
           image: true,
           color: true,
-          driver: { // vehicle এর driver info
+          driver: {
+            // vehicle এর driver info
             select: {
               id: true,
               fullName: true,
@@ -1755,7 +1874,8 @@ const startJourney = async (userToken: string, payload: IStartJourneyReq) => {
           // refferalCode: true,
           image: true,
           color: true,
-          driver: { // vehicle এর driver info
+          driver: {
+            // vehicle এর driver info
             select: {
               id: true,
               fullName: true,
@@ -1775,7 +1895,7 @@ const startJourney = async (userToken: string, payload: IStartJourneyReq) => {
 
 const completeJourney = async (
   userToken: string,
-  payload: ICompleteJourneyReq,
+  payload: ICompleteJourneyReq
   // files: any[]
 ) => {
   const decodedToken = jwtHelpers.verifyToken(
@@ -1832,7 +1952,8 @@ const completeJourney = async (
           // refferalCode: true,
           image: true,
           color: true,
-          driver: { // vehicle এর driver info
+          driver: {
+            // vehicle এর driver info
             select: {
               id: true,
               fullName: true,
@@ -1850,8 +1971,10 @@ const completeJourney = async (
   return result;
 };
 
-
 export const carTransportService = {
+  planCarTransport,
+  getMyRidePlans,
+  getRidePlanById,
   createCarTransport,
   cancelRide,
   getRideDetailsById,

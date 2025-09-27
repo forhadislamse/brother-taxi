@@ -267,11 +267,13 @@ const driverLoginController = catchAsync(async (req: Request, res: Response) => 
 
  const updateCurrentLocation = catchAsync(
   async (req: Request, res: Response) => {
-    const userId = req.user.id; // auth middleware থেকে আসা
+    // const userId = req.user?.id; // auth middleware থেকে আসা
     // console.log(userId)
+    const token = req.headers.authorization;
+    // console.log(token);
     const { lat, lng } = req.body;
-
-    if (!userId) {
+  
+    if (!token) {
       return sendResponse(res, {
         statusCode: 401,
         success: false,
@@ -289,7 +291,7 @@ const driverLoginController = catchAsync(async (req: Request, res: Response) => 
       });
     }
 
-    const updatedUser = await AuthServices.updateUserLocation(userId, lat, lng);
+    const updatedUser = await AuthServices.updateUserLocation(token as string, lat, lng);
 
     sendResponse(res, {
       statusCode: 200,

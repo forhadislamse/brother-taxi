@@ -4,6 +4,8 @@ import { jwtHelpers } from "../../../helpars/jwtHelpers";
 import config from "../../../config";
 import { calculateDistance } from "../../../shared/calculateDistance";
 
+
+
 const calculateFare = async (token: string, payload: any) => {
   // 1️⃣ Token decode
   const decodedToken = jwtHelpers.verifyToken(token, config.jwt.jwt_secret!);

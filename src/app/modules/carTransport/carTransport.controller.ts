@@ -1,18 +1,60 @@
-import httpStatus from 'http-status';
-import { carTransportService } from './carTransport.service';
-import catchAsync from '../../../shared/catchAsync';
-import sendResponse from '../../../shared/sendResponse';
-import pick from '../../../shared/pick';
-import { paginationFields } from '../../../constants/pagination';
-import { UserRole } from '@prisma/client';
-import { NextFunction } from 'express';
+import httpStatus from "http-status";
+import { carTransportService } from "./carTransport.service";
+import catchAsync from "../../../shared/catchAsync";
+import sendResponse from "../../../shared/sendResponse";
+import pick from "../../../shared/pick";
+import { paginationFields } from "../../../constants/pagination";
+import { UserRole } from "@prisma/client";
+
+const planCarTransport = catchAsync(async (req, res) => {
+  const payload = req.body;
+  const userId=req.user.id;
+
+  const result = await carTransportService.planCarTransport(userId,payload);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Car transport plan calculated",
+    data: result,
+  });
+});
+
+const getMyRidePlans = catchAsync(async (req, res) => {
+  const userId = req.user.id;
+
+  const ridePlans = await carTransportService.getMyRidePlans(userId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "User ride plans fetched successfully",
+    data: ridePlans,
+  });
+});
+
+const getRidePlanById = catchAsync(async (req, res) => {
+  const userId = req.user.id;
+  const planId = req.params.id;
+
+  const ridePlan = await carTransportService.getRidePlanById(userId, planId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Ride plan fetched successfully",
+    data: ridePlan,
+  });
+});
+
+
 
 const createCarTransport = catchAsync(async (req, res) => {
   const token = req.headers.authorization;
   const files = req.files as any[];
 
   // form-data তে data টা আসবে string আকারে
-  const parsedData = JSON.parse(req.body.data)
+  const parsedData = JSON.parse(req.body.data);
 
   const result = await carTransportService.createCarTransport(
     token as string,
@@ -33,7 +75,11 @@ const cancelRide = catchAsync(async (req, res) => {
   const rideId = req.params.id;
   const { cancelReason } = req.body;
 
-  const result = await carTransportService.cancelRide(userId, rideId, cancelReason);
+  const result = await carTransportService.cancelRide(
+    userId,
+    rideId,
+    cancelReason
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -53,14 +99,14 @@ const getRideDetailsById = catchAsync(async (req, res) => {
     return sendResponse(res, {
       statusCode: httpStatus.NOT_FOUND,
       success: false,
-      message: 'Ride not found',
+      message: "Ride not found",
     });
   }
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: 'Ride details fetched successfully',
+    message: "Ride details fetched successfully",
     data: ride,
   });
 });
@@ -78,7 +124,6 @@ const getRideDetailsById = catchAsync(async (req, res) => {
 //     data: stats,
 //   });
 // });
-
 
 // Get my rides (Rider side)
 // const getMyRides = catchAsync(async (req, res) => {
@@ -151,18 +196,14 @@ const getMyStatsController = catchAsync(async (req, res) => {
   });
 });
 
-
-
-
 const getAllCarTransports = catchAsync(async (req, res) => {
-  const filters = pick(req.query, [
-    "searchTerm",
-    "status",
-    "paymentStatus",
-  ]);
+  const filters = pick(req.query, ["searchTerm", "status", "paymentStatus"]);
   const options = pick(req.query, paginationFields);
 
-  const result = await carTransportService.getAllCarTransports(filters, options);
+  const result = await carTransportService.getAllCarTransports(
+    filters,
+    options
+  );
 
   sendResponse(res, {
     statusCode: httpStatus.OK,
@@ -190,8 +231,8 @@ const getCompletedRide = catchAsync(async (req, res) => {
   const userId = req.user?.id; // from auth middleware
 
   const ride = await carTransportService.getCompletedRideFromDb(rideId, userId);
-  sendResponse(res,{
-    statusCode:httpStatus.OK,
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
     success: true,
     message: "Ride completed successfully",
     data: ride,
@@ -211,7 +252,6 @@ const getNewCarTransportsReq = catchAsync(async (req, res) => {
     data: result.data,
   });
 });
-
 
 const getRideStatusById = catchAsync(async (req, res) => {
   const { id } = req.params;
@@ -288,7 +328,7 @@ const completeJourney = catchAsync(async (req, res) => {
 
   const result = await carTransportService.completeJourney(
     token as string,
-    req.body,
+    req.body
     // files || []
   );
 
@@ -300,8 +340,10 @@ const completeJourney = catchAsync(async (req, res) => {
   });
 });
 
-
 export const carTransportController = {
+  planCarTransport,
+  getMyRidePlans,
+  getRidePlanById,
   createCarTransport,
   cancelRide,
   getRideDetailsById, //new

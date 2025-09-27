@@ -9,11 +9,32 @@ import { fileUploader } from "../../../helpars/fileUploader";
 const router = express.Router();
 
 router.post(
+  "/ride-plan",
+  auth(USER_ROLE.RIDER),
+  carTransportController.planCarTransport
+);
+
+router.get(
+  "/my-ride-plans",
+  auth(USER_ROLE.RIDER),
+  carTransportController.getMyRidePlans
+);
+
+router.get(
+  "/ride-plan/:id",
+  auth(USER_ROLE.RIDER),
+  carTransportController.getRidePlanById
+);
+
+
+router.post(
   "/create",
   auth(USER_ROLE.RIDER),
   fileUploader.upload.array("images", 5),
   carTransportController.createCarTransport
 );
+
+
 
 router.get(
   "/all",
