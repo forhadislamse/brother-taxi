@@ -153,6 +153,20 @@ const getMyRides = catchAsync(async (req, res) => {
   });
 });
 
+const getMyPendingRides = catchAsync(async (req, res) => {
+  const userId = req.user.id;
+  const role = req.user.role as UserRole;
+
+  const rides = await carTransportService.getMyPendingRides(userId, role);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "My rides fetched successfully",
+    data: rides,
+  });
+});
+
 const getRideHistory = catchAsync(async (req, res) => {
   const userId = req.user.id;
   const role = req.user.role as UserRole;
@@ -350,6 +364,7 @@ export const carTransportController = {
   getCompletedRide,
   getNewCarTransportsReq, //new
   getMyRides,
+  getMyPendingRides,
   getDriverIncome,
   getRideHistory,
   getCarTransportById,

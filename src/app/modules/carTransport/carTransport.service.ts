@@ -399,7 +399,7 @@ const createCarTransport = async (
       rideTime,
       waitingTime,
       beforePickupImages: uploadedImages.map((img) => img.Location),
-      // assignedDriver: vehicle.userId, // assign driver if applicable
+      assignedDriver: vehicle.userId, // assign driver if applicable
     },
   });
 
@@ -928,6 +928,135 @@ const getMyRides = async (userId: string, role: UserRole) => {
     // Driver হলে assignedDriver দিয়ে match করবো
     rides = await prisma.carTransport.findMany({
       where: { assignedDriver: userId, status: TransportStatus.COMPLETED },
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            profileImage: true,
+            location: true,
+            lat: true,
+            lng: true,
+          },
+        },
+        vehicle: {
+          select: {
+            id: true,
+            manufacturer: true,
+            model: true,
+            licensePlateNumber: true,
+            bh: true,
+            // refferalCode: true,
+            image: true,
+            color: true,
+            driver: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phoneNumber: true,
+                profileImage: true,
+                location: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    return rides;
+  }
+
+  return [];
+};
+
+const getMyPendingRides = async (userId: string, role: UserRole) => {
+  let rides = [];
+
+  if (role === "RIDER") {
+    // Rider হলে userId ব্যবহার করবো
+    rides = await prisma.carTransport.findMany({
+      where: { userId, status: TransportStatus.PENDING },
+      orderBy: { createdAt: "desc" },
+      include: {
+        user: {
+          select: {
+            id: true,
+            fullName: true,
+            email: true,
+            profileImage: true,
+            location: true,
+            lat: true,
+            lng: true,
+          },
+        },
+        vehicle: {
+          select: {
+            id: true,
+            manufacturer: true,
+            model: true,
+            licensePlateNumber: true,
+            bh: true,
+            // refferalCode: true,
+            image: true,
+            color: true,
+            driver: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                phoneNumber: true,
+                profileImage: true,
+                location: true,
+              },
+            },
+          },
+        },
+      },
+    });
+
+    // nearby driver শুধু rider এর জন্য
+    const ridesWithNearby = await Promise.all(
+      rides.map(async (ride) => {
+        let nearbyDrivers: any[] = [];
+
+        if (ride.pickupLat && ride.pickupLng) {
+          const drivers = await findNearbyDrivers(
+            ride.pickupLat,
+            ride.pickupLng
+          );
+          nearbyDrivers = drivers.map((driver) => ({
+            id: driver.id,
+            fullName: driver.fullName,
+            phone: driver.phone,
+            profileImage: driver.profileImage,
+            lat: driver.lat,
+            lng: driver.lng,
+            distance: calculateDistance(
+              ride.pickupLat!,
+              ride.pickupLng!,
+              driver.lat!,
+              driver.lng!
+            ),
+          }));
+        }
+
+        return {
+          ...ride,
+          nearbyDrivers,
+        };
+      })
+    );
+
+    return ridesWithNearby;
+  }
+
+  if (role === "DRIVER") {
+    // Driver হলে assignedDriver দিয়ে match করবো
+    rides = await prisma.carTransport.findMany({
+      where: { assignedDriver: userId, status: TransportStatus.PENDING },
       orderBy: { createdAt: "desc" },
       include: {
         user: {
@@ -1982,6 +2111,7 @@ export const carTransportService = {
   getNewCarTransportsReq,
   getCarTransportById,
   getMyRides,
+  getMyPendingRides,
   getDriverIncome,
   getRideHistory,
   getMyRidesOrTripsCount,

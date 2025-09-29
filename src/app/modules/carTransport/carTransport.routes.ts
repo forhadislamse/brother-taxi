@@ -45,6 +45,9 @@ router.get(
 // Rider get all my rides
 router.get("/my-rides", auth(), carTransportController.getMyRides);
 
+// Rider get all my rides
+router.get("/my-rides-pending",auth(), carTransportController.getMyPendingRides);
+
 // Rider get ride history
 router.get("/my-rides-history", auth(), carTransportController.getRideHistory);
 
