@@ -162,7 +162,7 @@ const getMyPendingRides = catchAsync(async (req, res) => {
   sendResponse(res, {
     statusCode: httpStatus.OK,
     success: true,
-    message: "My rides fetched successfully",
+    message: "My pending rides fetched successfully",
     data: rides,
   });
 });
@@ -177,6 +177,19 @@ const getRideHistory = catchAsync(async (req, res) => {
     statusCode: httpStatus.OK,
     success: true,
     message: "Ride history fetched successfully",
+    data: rides,
+  });
+});
+const getCancelledRides = catchAsync(async (req, res) => {
+  const userId = req.user.id;
+  const role = req.user.role as UserRole;
+
+  const rides = await carTransportService.getRideHistory(userId, role);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Cancelled Ride fetched successfully",
     data: rides,
   });
 });
@@ -367,6 +380,7 @@ export const carTransportController = {
   getMyPendingRides,
   getDriverIncome,
   getRideHistory,
+  getCancelledRides,
   getCarTransportById,
   getMyStatsController,
   getAllCarTransports,

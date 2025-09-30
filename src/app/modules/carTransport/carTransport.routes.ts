@@ -45,11 +45,14 @@ router.get(
 // Rider get all my rides
 router.get("/my-rides", auth(), carTransportController.getMyRides);
 
-// Rider get all my rides
+// Rider get all my pending rides
 router.get("/my-rides-pending",auth(), carTransportController.getMyPendingRides);
 
 // Rider get ride history
 router.get("/my-rides-history", auth(), carTransportController.getRideHistory);
+
+// Rider get ride history
+router.get("/my-cancelled-rides", auth(), carTransportController.getCancelledRides);
 
 // Rider এর total rides count fetch করার route
 router.get("/my-rides/count", auth(), carTransportController.getMyStatsController);

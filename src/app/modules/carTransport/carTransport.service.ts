@@ -1109,7 +1109,7 @@ const getRideHistory = async (userId: string, role: UserRole) => {
       where: {
         userId,
         status: {
-          in: [TransportStatus.COMPLETED, TransportStatus.CANCELLED], // rider history
+          in: [TransportStatus.CANCELLED], // rider history
         },
       },
       orderBy: { createdAt: "desc" },
