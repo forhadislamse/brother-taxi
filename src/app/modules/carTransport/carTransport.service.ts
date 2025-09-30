@@ -229,18 +229,59 @@ const planCarTransport = async (userId: string, payload: any) => {
   };
 };
 
+// const getMyRidePlans = async (userId: string) => {
+//   // Fetch ride plans for the logged-in user
+//   const ridePlans = await prisma.ridePlan.findMany({
+//     where: { userId },
+//     orderBy: { createdAt: "desc" },
+//     include: {
+//       carTransport: true, // Include car transport info if created
+//     },
+//   });
+
+//   return ridePlans;
+// };
+
 const getMyRidePlans = async (userId: string) => {
   // Fetch ride plans for the logged-in user
   const ridePlans = await prisma.ridePlan.findMany({
     where: { userId },
     orderBy: { createdAt: "desc" },
     include: {
-      carTransport: true, // Include car transport info if created
+      carTransport: true, // যদি carTransport এর ডিটেইল দরকার হয়
     },
   });
 
-  return ridePlans;
+  // প্রতিটি প্ল্যানের জন্য fresh nearby drivers খুঁজে বের করা
+  const ridePlansWithDrivers = await Promise.all(
+    ridePlans.map(async (plan) => {
+      const nearbyDriversRaw = await findNearbyDrivers(plan.pickupLat, plan.pickupLng);
+
+      const nearbyDrivers = await Promise.all(
+        nearbyDriversRaw.map(async (driver) => {
+          const vehicle = await prisma.vehicle.findFirst({
+            where: { userId: driver.id, isActive: true },
+          });
+
+          return {
+            id: driver.id,
+            fullName: driver.fullName || "",
+            lat: driver.lat!,
+            lng: driver.lng!,
+            vehicleId: vehicle?.id || null,
+            vehicleName: vehicle ? `${vehicle.manufacturer} ${vehicle.model}` : null,
+            distance: calculateDistance(plan.pickupLat, plan.pickupLng, driver.lat!, driver.lng!),
+          };
+        })
+      );
+
+      return { ...plan, nearbyDrivers };
+    })
+  );
+
+  return ridePlansWithDrivers;
 };
+
 
 const getRidePlanById = async (userId: string, planId: string) => {
   const ridePlan = await prisma.ridePlan.findFirst({
