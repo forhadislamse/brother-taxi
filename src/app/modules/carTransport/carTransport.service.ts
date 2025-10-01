@@ -560,6 +560,7 @@ const getCarTransportById = async (id: string): Promise<any | null> => {
         select: {
           id: true,
           fullName: true,
+          phoneNumber:true,
           email: true,
           profileImage: true,
           location: true,
