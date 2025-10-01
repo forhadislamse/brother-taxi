@@ -433,12 +433,22 @@ const getAllTransactions = async (
   }
 
   // sum of amount
+  // const aggregateResult = await prisma.payment.aggregate({
+  //   where,
+  //   _sum: {
+  //     amount: true,
+  //   },
+  // });
+
   const aggregateResult = await prisma.payment.aggregate({
-    where,
-    _sum: {
-      amount: true,
-    },
-  });
+  where: {
+    ...where,
+    paymentStatus: { not: "REFUNDED" }, // refund বাদ দেওয়া হলো
+  },
+  _sum: {
+    amount: true,
+  },
+});
 
   const allAmount = aggregateResult._sum.amount || 0;
 

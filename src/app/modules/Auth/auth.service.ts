@@ -242,7 +242,7 @@ const verifyLogin = async (payload: {
     role: user.role
   }, config.jwt.jwt_secret as Secret, config.jwt.expires_in as string);
 
-  return { message: "OTP verification successful", token: token };
+  return { message: "OTP verification successful", token: token, id:user.id };
 };
 
 // change password
