@@ -57,12 +57,12 @@ export const initiateSuperAdmin = async () => {
       data: {
         email: "admin@gmail.com",
         phoneNumber,
-        password: hashedPassword,
+        // password: hashedPassword,
         status: UserStatus.ACTIVE,
         role: UserRole.ADMIN,
         fullName: "Super Admin",
         gender: Gender.MALE,
-        adminApprovedStatus: "APPROVED" // Optional, for admin explicitly
+        // adminApprovedStatus: "APPROVED" // Optional, for admin explicitly
       },
     });
 
