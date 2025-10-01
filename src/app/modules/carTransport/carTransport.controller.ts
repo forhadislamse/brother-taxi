@@ -49,17 +49,35 @@ const getRidePlanById = catchAsync(async (req, res) => {
 
 
 
+// const createCarTransport = catchAsync(async (req, res) => {
+//   const token = req.headers.authorization;
+//   const files = req.files as any[];
+
+//   // form-data তে data টা আসবে string আকারে
+//   const parsedData = JSON.parse(req.body.data);
+
+//   const result = await carTransportService.createCarTransport(
+//     token as string,
+//     parsedData,
+//     files || []
+//   );
+
+//   sendResponse(res, {
+//     statusCode: httpStatus.OK,
+//     success: true,
+//     message: "Car transport request created successfully",
+//     data: result,
+//   });
+// });
+
+
 const createCarTransport = catchAsync(async (req, res) => {
   const token = req.headers.authorization;
-  const files = req.files as any[];
-
-  // form-data তে data টা আসবে string আকারে
-  const parsedData = JSON.parse(req.body.data);
+  const parsedData = req.body; // এখন আর JSON.parse লাগবে না, raw JSON আসবে
 
   const result = await carTransportService.createCarTransport(
     token as string,
-    parsedData,
-    files || []
+    parsedData
   );
 
   sendResponse(res, {
@@ -69,6 +87,7 @@ const createCarTransport = catchAsync(async (req, res) => {
     data: result,
   });
 });
+
 
 const cancelRide = catchAsync(async (req, res) => {
   const userId = req.user.id;

@@ -28,7 +28,6 @@ import {
   IStartJourneyReq,
 } from "./carTransport.interface";
 
-
 export async function calculateFareFromConfig(
   distance: number,
   rideTime: number,
@@ -85,7 +84,6 @@ export async function calculateFareFromConfig(
     totalFare: Math.round(totalFare),
   };
 }
-
 
 // const planCarTransport = async (payload: any) => {
 //   const {pickup,dropOff, pickupLat, pickupLng, dropOffLat, dropOffLng } = payload;
@@ -162,27 +160,36 @@ export async function calculateFareFromConfig(
 //   };
 // };
 
-
-
 const planCarTransport = async (userId: string, payload: any) => {
-  const { pickup, dropOff, pickupLat, pickupLng, dropOffLat, dropOffLng } = payload;
+  const { pickup, dropOff, pickupLat, pickupLng, dropOffLat, dropOffLng } =
+    payload;
 
   if (!pickupLat || !pickupLng || !dropOffLat || !dropOffLng) {
     throw new Error("Pickup and drop-off coordinates are required");
   }
 
   // Distance
-  const distance = calculateDistance(pickupLat, pickupLng, dropOffLat, dropOffLng);
+  const distance = calculateDistance(
+    pickupLat,
+    pickupLng,
+    dropOffLat,
+    dropOffLng
+  );
 
   // Service type
-  const serviceType: RideType = distance < 10 ? RideType.MiniRide : RideType.LongRide;
+  const serviceType: RideType =
+    distance < 10 ? RideType.MiniRide : RideType.LongRide;
 
   // Ride time & waiting time
   const rideTime = payload.rideTime ? Number(payload.rideTime) : 0;
   const waitingTime = payload.waitingTime ? Number(payload.waitingTime) : 0;
 
   // Fare
-  const { totalFare } = await calculateFareFromConfig(distance, rideTime, waitingTime);
+  const { totalFare } = await calculateFareFromConfig(
+    distance,
+    rideTime,
+    waitingTime
+  );
 
   // Nearby drivers (dynamic, not saved in DB)
   const nearbyDriversRaw = await findNearbyDrivers(pickupLat, pickupLng);
@@ -198,8 +205,15 @@ const planCarTransport = async (userId: string, payload: any) => {
         lat: driver.lat!,
         lng: driver.lng!,
         vehicleId: vehicle?.id || null,
-        vehicleName: vehicle ? `${vehicle.manufacturer} ${vehicle.model}` : null,
-        distance: calculateDistance(pickupLat, pickupLng, driver.lat!, driver.lng!),
+        vehicleName: vehicle
+          ? `${vehicle.manufacturer} ${vehicle.model}`
+          : null,
+        distance: calculateDistance(
+          pickupLat,
+          pickupLng,
+          driver.lat!,
+          driver.lng!
+        ),
       };
     })
   );
@@ -255,7 +269,10 @@ const getMyRidePlans = async (userId: string) => {
   // প্রতিটি প্ল্যানের জন্য fresh nearby drivers খুঁজে বের করা
   const ridePlansWithDrivers = await Promise.all(
     ridePlans.map(async (plan) => {
-      const nearbyDriversRaw = await findNearbyDrivers(plan.pickupLat, plan.pickupLng);
+      const nearbyDriversRaw = await findNearbyDrivers(
+        plan.pickupLat,
+        plan.pickupLng
+      );
 
       const nearbyDrivers = await Promise.all(
         nearbyDriversRaw.map(async (driver) => {
@@ -269,8 +286,15 @@ const getMyRidePlans = async (userId: string) => {
             lat: driver.lat!,
             lng: driver.lng!,
             vehicleId: vehicle?.id || null,
-            vehicleName: vehicle ? `${vehicle.manufacturer} ${vehicle.model}` : null,
-            distance: calculateDistance(plan.pickupLat, plan.pickupLng, driver.lat!, driver.lng!),
+            vehicleName: vehicle
+              ? `${vehicle.manufacturer} ${vehicle.model}`
+              : null,
+            distance: calculateDistance(
+              plan.pickupLat,
+              plan.pickupLng,
+              driver.lat!,
+              driver.lng!
+            ),
           };
         })
       );
@@ -281,7 +305,6 @@ const getMyRidePlans = async (userId: string) => {
 
   return ridePlansWithDrivers;
 };
-
 
 const getRidePlanById = async (userId: string, planId: string) => {
   const ridePlan = await prisma.ridePlan.findFirst({
@@ -308,83 +331,68 @@ const getRidePlanById = async (userId: string, planId: string) => {
 //   const decodedToken = jwtHelpers.verifyToken(token, config.jwt.jwt_secret!);
 //   const userId = decodedToken.id;
 
+//   if (!payload.ridePlanId) throw new Error("ridePlanId is required");
+
+//   // Fetch ride plan
+//   const ridePlan = await prisma.ridePlan.findUnique({
+//     where: { id: payload.ridePlanId },
+//   });
+//   if (!ridePlan) throw new Error("Ride plan not found");
+
+//   // Fetch vehicle
 //   const vehicle = await prisma.vehicle.findUnique({
 //     where: { id: payload.vehicleId },
 //   });
 //   if (!vehicle) throw new Error("Vehicle not found");
 
-//   // Distance
-//   const distance = calculateDistance(
-//     payload.pickupLat,
-//     payload.pickupLng,
-//     payload.dropOffLat,
-//     payload.dropOffLng
-//   );
+//   // Calculate fare & distance using ridePlan to avoid mismatch
+//   const distance = ridePlan.distance;
+//   const serviceType: RideType = ridePlan.serviceType as RideType;
+//   const rideTime = ridePlan.rideTime;
+//   const waitingTime = ridePlan.waitingTime;
+//   const totalFare = ridePlan.estimatedFare;
 
-//   const serviceType: RideType =
-//     distance < 10 ? RideType.MiniRide : RideType.LongRide;
-
-//   // Ride time & waiting time
-//   const rideTime = payload.rideTime ? Number(payload.rideTime) : 0;
-//   const waitingTime = payload.waitingTime ? Number(payload.waitingTime) : 0;
-
-//   // Fare
-//   const { totalFare } = await calculateFareFromConfig(
-//     distance,
-//     rideTime,
-//     waitingTime
-//   );
+//   // Pickup time & date
+//   const now = new Date();
+//   const pickupDate = payload.pickupDate?.trim() || now.toISOString().split("T")[0];
+//   const pickupTime = payload.pickupTime?.trim() || now.toTimeString().split(" ")[0].slice(0, 5);
 
 //   // Upload images
 //   const uploadedImages = await Promise.all(
 //     files.map((file) => fileUploader.uploadToDigitalOcean(file))
 //   );
 
-//   // Save ride
+//   // Save car transport
 //   const carTransport = await prisma.carTransport.create({
 //     data: {
-//       ...payload,
 //       userId,
-//       totalAmount: totalFare,
+//       pickupTime,
+//       pickupDate,
+//       vehicleId: vehicle.id,
+//       ridePlanId: ridePlan.id, // <-- link transport to ride plan
+//       pickupLocation: ridePlan.pickup,
+//       dropOffLocation: ridePlan.dropOff,
+//       pickupLat: ridePlan.pickupLat,
+//       pickupLng: ridePlan.pickupLng,
+//       dropOffLat: ridePlan.dropOffLat,
+//       dropOffLng: ridePlan.dropOffLng,
+
 //       distance,
+//       totalAmount: totalFare,
 //       serviceType,
+//       rideTime,
+//       waitingTime,
 //       beforePickupImages: uploadedImages.map((img) => img.Location),
+//       assignedDriver: vehicle.userId, // assign driver if applicable
 //     },
 //   });
 
-//   // Find nearby drivers
-//   let nearbyDrivers: any[] = [];
-//   if (payload.pickupLat && payload.pickupLng) {
-//     nearbyDrivers = await findNearbyDrivers(
-//       payload.pickupLat,
-//       payload.pickupLng
-//     );
-//   }
-
-//   // Return ride + nearby drivers
-//   return {
-//     ride: carTransport,
-//     nearbyDrivers: nearbyDrivers.map((driver) => ({
-//       id: driver.id,
-//       fullName: driver.fullName,
-//       phone: driver.phone,
-//       profileImage: driver.profileImage,
-//       lat: driver.lat,
-//       lng: driver.lng,
-//       distance: calculateDistance(
-//         payload.pickupLat,
-//         payload.pickupLng,
-//         driver.lat!,
-//         driver.lng!
-//       ),
-//     })),
-//   };
+//   return { carTransport };
 // };
 
 const createCarTransport = async (
   token: string,
-  payload: any,
-  files: any[]
+  payload: any
 ) => {
   const decodedToken = jwtHelpers.verifyToken(token, config.jwt.jwt_secret!);
   const userId = decodedToken.id;
@@ -403,44 +411,38 @@ const createCarTransport = async (
   });
   if (!vehicle) throw new Error("Vehicle not found");
 
-  // Calculate fare & distance using ridePlan to avoid mismatch
+  // Calculate fare & distance
   const distance = ridePlan.distance;
   const serviceType: RideType = ridePlan.serviceType as RideType;
   const rideTime = ridePlan.rideTime;
   const waitingTime = ridePlan.waitingTime;
   const totalFare = ridePlan.estimatedFare;
 
-// Pickup time & date
-  const pickupDate = payload.pickupDate?.trim() || null;
-  const pickupTime = payload.pickupTime?.trim() || null;
+  // Pickup time & date
+  const now = new Date();
+  const pickupDate = payload.pickupDate?.trim() || now.toISOString().split("T")[0];
+  const pickupTime = payload.pickupTime?.trim() || now.toTimeString().split(" ")[0].slice(0, 5);
 
-  // Upload images
-  const uploadedImages = await Promise.all(
-    files.map((file) => fileUploader.uploadToDigitalOcean(file))
-  );
-
-  // Save car transport
+  // Save car transport (images বাদ)
   const carTransport = await prisma.carTransport.create({
     data: {
       userId,
       pickupTime,
       pickupDate,
       vehicleId: vehicle.id,
-      ridePlanId: ridePlan.id, // <-- link transport to ride plan
+      ridePlanId: ridePlan.id,
       pickupLocation: ridePlan.pickup,
       dropOffLocation: ridePlan.dropOff,
       pickupLat: ridePlan.pickupLat,
       pickupLng: ridePlan.pickupLng,
       dropOffLat: ridePlan.dropOffLat,
       dropOffLng: ridePlan.dropOffLng,
-      
       distance,
       totalAmount: totalFare,
       serviceType,
       rideTime,
       waitingTime,
-      beforePickupImages: uploadedImages.map((img) => img.Location),
-      assignedDriver: vehicle.userId, // assign driver if applicable
+      assignedDriver: vehicle.userId,
     },
   });
 
@@ -560,7 +562,7 @@ const getCarTransportById = async (id: string): Promise<any | null> => {
         select: {
           id: true,
           fullName: true,
-          phoneNumber:true,
+          phoneNumber: true,
           email: true,
           profileImage: true,
           location: true,
@@ -1307,9 +1309,9 @@ const getDriverIncome = async (
       distance: true,
       rideTime: true,
       serviceType: true,
-      status:true,
-      paymentStatus:true,
-      assignedDriverReqStatus:true,
+      status: true,
+      paymentStatus: true,
+      assignedDriverReqStatus: true,
       createdAt: true,
       user: {
         select: {

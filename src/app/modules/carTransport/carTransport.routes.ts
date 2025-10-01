@@ -27,12 +27,19 @@ router.get(
 );
 
 
+// router.post(
+//   "/create",
+//   auth(USER_ROLE.RIDER),
+//   fileUploader.upload.array("images", 5),
+//   carTransportController.createCarTransport
+// );
+
 router.post(
   "/create",
   auth(USER_ROLE.RIDER),
-  fileUploader.upload.array("images", 5),
   carTransportController.createCarTransport
 );
+
 
 
 
