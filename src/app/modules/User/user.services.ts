@@ -290,6 +290,22 @@ const getAllUsers = async (filters: IUserFilters) => {
 
   if (role) {
     whereConditions.role = role as UserRole;
+     if (role === UserRole.DRIVER) {
+    whereConditions.adminApprovedStatus = AdminApprovedStatus.APPROVED;
+  }
+  
+  }
+  else {
+    // যদি role না দেয়া হয়, DRIVER এর pending বাদ দিতে
+    whereConditions.OR = [
+      {
+        role: UserRole.RIDER,
+      },
+      {
+        role: UserRole.DRIVER,
+        adminApprovedStatus: AdminApprovedStatus.APPROVED,
+      }
+    ];
   }
 
   const total = await prisma.user.count({ where: whereConditions });
