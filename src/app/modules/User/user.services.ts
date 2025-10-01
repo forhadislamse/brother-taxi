@@ -172,7 +172,8 @@ const createUserIntoDb = async (payload: User) => {
   });
 
   // otp generate
-  const otp = generateOtp(4);
+  // const otp = generateOtp(4);
+  const otp = 1234;
   const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
 
   let user;

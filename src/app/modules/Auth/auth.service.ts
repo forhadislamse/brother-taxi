@@ -101,7 +101,8 @@ const resendOtp = async (phoneNumber: string) => {
     throw new ApiError(httpStatus.NOT_FOUND, "This user is not found!");
   }
 
-  const otp = generateOtp(4);
+  // const otp = generateOtp(4);
+  const otp = 1234;
   const expirationOtp = new Date(Date.now() + 15 * 60 * 1000);
 
   try {
