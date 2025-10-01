@@ -42,7 +42,7 @@ export const initiateSuperAdmin = async () => {
       Number(config.bcrypt_salt_rounds)
     );
 
-    const phoneNumber = "1234567890";
+    const phoneNumber = "+8801234567890";
 
     const isExistUser = await prisma.user.findUnique({
       where: { phoneNumber },
