@@ -1041,7 +1041,7 @@ const getMyPendingRides = async (userId: string, role: UserRole) => {
             id: true,
             manufacturer: true,
             model: true,
-            licensePlateNumber: true,
+            // licensePlateNumber: true,
             bh: true,
             // refferalCode: true,
             image: true,
@@ -1051,9 +1051,13 @@ const getMyPendingRides = async (userId: string, role: UserRole) => {
                 id: true,
                 fullName: true,
                 email: true,
+                referralCode:true,
                 phoneNumber: true,
                 profileImage: true,
                 location: true,
+                totalTrips:true,
+                averageRating:true,
+                reviewCount:true,
               },
             },
           },
@@ -1062,7 +1066,7 @@ const getMyPendingRides = async (userId: string, role: UserRole) => {
     });
 
     // nearby driver শুধু rider এর জন্য
-    const ridesWithNearby = await Promise.all(
+    /* const ridesWithNearby = await Promise.all(
       rides.map(async (ride) => {
         let nearbyDrivers: any[] = [];
 
@@ -1094,7 +1098,8 @@ const getMyPendingRides = async (userId: string, role: UserRole) => {
       })
     );
 
-    return ridesWithNearby;
+    return ridesWithNearby; */
+  return rides
   }
 
   if (role === "DRIVER") {
