@@ -459,24 +459,6 @@ model Notification {
   @@map("notifications")
 }
 
-// model Review {
-//   id             String   @id @default(auto()) @map("_id") @db.ObjectId
-//   userId         String   @db.ObjectId
-//   driverId       String   @db.ObjectId
-//   carTransportId String   @db.ObjectId
-//   rating         Int      @default(0)
-//   comment        String?
-//   createdAt      DateTime @default(now())
-//   updatedAt      DateTime @updatedAt
-
-//   // Relations
-//   user         User         @relation("UserReview", fields: [userId], references: [id], onDelete: Cascade)
-//   driver       User         @relation("DriverReview", fields: [driverId], references: [id], onDelete: Cascade)
-//   carTransport CarTransport @relation(fields: [carTransportId], references: [id], onDelete: Cascade)
-
-//   @@unique([userId, carTransportId])
-//   @@map("reviews")
-// }
 
 model Review {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId

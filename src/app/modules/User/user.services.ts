@@ -177,6 +177,7 @@ const createUserIntoDb = async (payload: User) => {
   const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
 
   let user;
+  let isExist = false; // default
 
   if (existingUser) {
     if (existingUser.isPhoneNumberVerify === false) {
@@ -199,6 +200,7 @@ const createUserIntoDb = async (payload: User) => {
           updatedAt: true,
         },
       });
+      isExist = true; // পুরানো user ছিল
     } else {
       throw new ApiError(
         httpStatus.BAD_REQUEST,
@@ -225,6 +227,7 @@ const createUserIntoDb = async (payload: User) => {
         updatedAt: true,
       },
     });
+    isExist = false; // নতুন user
   }
 
   console.log("✅ User created/updated with phone:", payload.phoneNumber);
@@ -237,7 +240,7 @@ const createUserIntoDb = async (payload: User) => {
     console.error("❌ Failed to send OTP:", error);
   }
 
-  return user;
+  return {...user, isExist};
 };
 
 

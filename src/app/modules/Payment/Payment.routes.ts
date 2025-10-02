@@ -68,6 +68,7 @@ router.post(
   PaymentController.refundPayment
 );
 
+// 11. Create Stripe account for driver
 router.post(
   "/create-stripe-account",
   auth(),

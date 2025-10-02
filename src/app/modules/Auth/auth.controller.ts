@@ -66,7 +66,7 @@ const verifyLogin = catchAsync(async (req: Request, res: Response) => {
   sendResponse(res, {
       statusCode: httpStatus.OK,
       success: true,
-      message: "Check your email!",
+      message: "Check your phone number!",
       data: result
   })
 });
@@ -141,6 +141,7 @@ const logoutUser = catchAsync(async (req: Request, res: Response) => {
 //       data: result
 //   })
 // });
+
 // const verifyForgotPasswordOtp = catchAsync(async (req: Request, res: Response) => {
 
 //   const result= await AuthServices.verifyForgotPasswordOtp(req.body);
