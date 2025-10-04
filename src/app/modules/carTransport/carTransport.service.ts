@@ -571,28 +571,31 @@ const getCarTransportById = async (id: string): Promise<any | null> => {
         },
       },
       vehicle: {
-        select: {
-          id: true,
-          manufacturer: true,
-          model: true,
-          licensePlateNumber: true,
-          bh: true,
-          // refferalCode: true,
-          image: true,
-          color: true,
-          driver: {
-            // vehicle এর driver info
-            select: {
-              id: true,
-              fullName: true,
-              email: true,
-              phoneNumber: true,
-              profileImage: true,
-              location: true,
+          select: {
+            id: true,
+            manufacturer: true,
+            model: true,
+            // licensePlateNumber: true,
+            bh: true,
+            // refferalCode: true,
+            image: true,
+            color: true,
+            driver: {
+              select: {
+                id: true,
+                fullName: true,
+                email: true,
+                referralCode:true,
+                phoneNumber: true,
+                profileImage: true,
+                location: true,
+                totalTrips:true,
+                averageRating:true,
+                reviewCount:true,
+              },
             },
           },
         },
-      },
     },
   });
 
