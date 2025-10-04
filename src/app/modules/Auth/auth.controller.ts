@@ -60,7 +60,8 @@ const resendOtp = catchAsync(async (req: Request, res: Response) => {
 
 const verifyLogin = catchAsync(async (req: Request, res: Response) => {
 
-  const result= await AuthServices.verifyLogin(req.body);
+  const { phoneNumber, otp, fcmToken } = req.body;
+  const result= await AuthServices.verifyLogin(phoneNumber, otp, fcmToken);
   
 
   sendResponse(res, {

@@ -132,76 +132,16 @@ const resendOtp = async (phoneNumber: string) => {
   return { message: "OTP resent successfully", otp: otp };
 };
 
+// const verifyLogin = async (payload: {
+//   phoneNumber: string;
+//   otp: number;
+// }) => {
 
 
-
-// verify phone service
-// const verifyLogin = async (phoneNumber: string, otp: number, fcmToken?: string) => {
-//   // Find the user by email
-//   const user = await prisma.user.findUnique({
-//     where: { phoneNumber},
-//   });
-//   if (!user) {
-//     throw new ApiError(404, "User not found");
-//   }
-//   // Check if the OTP matches and is not expired
-//   if (user.otp !== otp) {
-//     throw new ApiError(400, "Invalid OTP");
-//   }
-//   const currentTime = new Date();
-
-//   if (!user.otpExpiresAt && user.otpExpiresAt! < currentTime) {
-//     throw new ApiError(400, "OTP has expired");
-//   }
-
-//   // Update FCM token if provided
-//   if (fcmToken) {
-//     await prisma.user.update({
-//       where: { id: user.id },
-//       data: { fcmToken: fcmToken },
-//     });
-//   }
-
-//   // Update the user's email verification status
-//   const updatedUser = await prisma.user.update({
-//     where: { phoneNumber },
-//     data: {
-//       isPhoneNumberVerify: true,
-//     },
-//     select: {
-//       id: true,
-//       fullName: true,
-//       phone: true,
-//       role: true,
-//       createdAt: true,
-//       updatedAt: true,
-//     },
-//   });
-
-//   // Generate a JWT token after successful verification
-//   const accessToken = jwtHelpers.generateToken(
-//     {
-//       id: updatedUser.id,
-//       phone: updatedUser.phoneNumber,
-//       role: updatedUser.role,
-//     },
-//     config.jwt.jwt_secret as Secret,
-//     config.jwt.expires_in as string
-//   );
-
-//   return {
-//     user: updatedUser,
-//     token: accessToken,
-//   };
-// };
-
-const verifyLogin = async (payload: {
-  phoneNumber: string;
-  otp: number;
-}) => {
+const verifyLogin = async (phoneNumber: string, otp: number, fcmToken?: string) => {
   // Check if the user exists
   const user = await prisma.user.findUnique({
-    where: { phoneNumber: payload.phoneNumber },
+    where: { phoneNumber},
   });
 // console.log("DB OTP:", user.otp, "Client OTP:", payload.otp);
   if (!user) {
@@ -218,11 +158,19 @@ const verifyLogin = async (payload: {
 
   // Check if the OTP is valid and not expired
   if (
-    user.otp !== payload.otp ||
+    user.otp !== otp ||
     !user.otpExpiresAt ||
     user.otpExpiresAt < new Date()
   ) {
     throw new ApiError(httpStatus.BAD_REQUEST, "Invalid OTP");
+  }
+
+  // Update FCM token if provided
+  if (fcmToken) {
+    await prisma.user.update({
+      where: { id: user.id },
+      data: { fcmToken: fcmToken },
+    });
   }
 
   // Update the user's OTP, OTP expiration, and verification status
