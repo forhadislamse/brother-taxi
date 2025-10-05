@@ -199,30 +199,29 @@ model User {
   averageRating Float  @default(0) // Average rating score
   reviewCount   Int    @default(0)
 
-  createdAt        DateTime       @default(now())
-  updatedAt        DateTime       @updatedAt
-  notifications    Notification[]
+  createdAt             DateTime       @default(now())
+  updatedAt             DateTime       @updatedAt
+  SentNotifications     Notification[] @relation("SentNotifications")
+  ReceivedNotifications Notification[] @relation("ReceivedNotifications")
   // reviewsWritten   Review[]             @relation("")
   // reviewsReceived  Review[]             @relation("DriverReview")
-  reviewsGiven     Review[]       @relation("Reviewer")
-  reviewsReceived  Review[]       @relation("Reviewee")
-  estimateFares    EstimateFare[]
-  vehicles         Vehicle[]
-  carTransports    CarTransport[]
-  Chat             Chat[]         @relation("SenderChat")
-  Message          Message[]
-  driverChats      Chat[]         @relation("DriverChat")
-  Driver           CarTransport[] @relation("Driver")
-  Sender           CarTransport[] @relation("Sender")
-  paymentsSent     Payment[]      @relation("PaymentSender")
-  paymentsReceived Payment[]      @relation("PaymentReceiver")
-  savedCards       SavedCard[]
-  ridePlan ridePlan[]
+  reviewsGiven          Review[]       @relation("Reviewer")
+  reviewsReceived       Review[]       @relation("Reviewee")
+  estimateFares         EstimateFare[]
+  vehicles              Vehicle[]
+  carTransports         CarTransport[]
+  Chat                  Chat[]         @relation("SenderChat")
+  Message               Message[]
+  driverChats           Chat[]         @relation("DriverChat")
+  Driver                CarTransport[] @relation("Driver")
+  Sender                CarTransport[] @relation("Sender")
+  paymentsSent          Payment[]      @relation("PaymentSender")
+  paymentsReceived      Payment[]      @relation("PaymentReceiver")
+  savedCards            SavedCard[]
+  ridePlan              ridePlan[]
 
   @@map("users")
 }
-
-
 
 model CarTransport {
   id        String @id @default(auto()) @map("_id") @db.ObjectId
@@ -280,14 +279,14 @@ model CarTransport {
   updatedAt DateTime @updatedAt
 
   // ───── Relations
-  ridePlanId  String?     @db.ObjectId   // <-- connect to ridePlan
+  ridePlanId String? @db.ObjectId // <-- connect to ridePlan
 
   // Relations
-  ridePlan    ridePlan?   @relation(fields: [ridePlanId], references: [id])
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
-  vehicle Vehicle @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
-  driver  User?   @relation("Driver", fields: [assignedDriver], references: [id], onDelete: Cascade)
-  sender  User?   @relation("Sender", fields: [userId], references: [id], onDelete: Cascade)
+  ridePlan ridePlan? @relation(fields: [ridePlanId], references: [id])
+  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  vehicle  Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
+  driver   User?     @relation("Driver", fields: [assignedDriver], references: [id], onDelete: Cascade)
+  sender   User?     @relation("Sender", fields: [userId], references: [id], onDelete: Cascade)
 
   Review  Review[] // ride feedback
   // fare   Fare[]
@@ -298,34 +297,32 @@ model CarTransport {
 }
 
 model ridePlan {
-  id            String   @id @default(auto()) @map("_id") @db.ObjectId
-  userId        String   @db.ObjectId          // the rider/user who requested the plan
-  user    User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+  id     String @id @default(auto()) @map("_id") @db.ObjectId
+  userId String @db.ObjectId // the rider/user who requested the plan
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
 
   // Pickup & Drop-off names
-  pickup        String
-  dropOff       String
+  pickup  String
+  dropOff String
 
   // Coordinates
-  pickupLat     Float
-  pickupLng     Float
-  dropOffLat    Float
-  dropOffLng    Float
+  pickupLat  Float
+  pickupLng  Float
+  dropOffLat Float
+  dropOffLng Float
 
   // Ride info
-  rideTime      Float   @default(0)
-  waitingTime   Float   @default(0)
+  rideTime      Float  @default(0)
+  waitingTime   Float  @default(0)
   distance      Float
   estimatedFare Float
   serviceType   String
 
   carTransport CarTransport[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
-
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
-
 
 model Chat {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -448,17 +445,18 @@ model Notification {
   body      String
   type      NotificationType @default(GENERAL)
   data      String?
-  targetId  String?          @default("")
+  // targetId  String?          @default("")
+  targetId  String?          @db.ObjectId
   slug      String?          @default("")
   fcmToken  String?          @default("")
   read      Boolean          @default(false)
   createdAt DateTime         @default(now())
   updatedAt DateTime         @updatedAt
-  user      User             @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user      User             @relation("SentNotifications", fields: [userId], references: [id], onDelete: Cascade)
+  target    User?            @relation("ReceivedNotifications", fields: [targetId], references: [id], onDelete: Cascade)
 
   @@map("notifications")
 }
-
 
 model Review {
   id             String   @id @default(auto()) @map("_id") @db.ObjectId
@@ -489,7 +487,7 @@ model Vehicle {
   image              String?
   color              String?
   licensePlateNumber String?
-  isActive           Boolean?  @default(true)
+  isActive           Boolean? @default(true)
   bh                 String // same as your schema
   // refferalCode       String
   createdAt          DateTime @default(now())

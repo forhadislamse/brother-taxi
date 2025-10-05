@@ -2,6 +2,8 @@
 import express from "express";
 import auth from "../../middlewares/auth";
 import { NotificationController } from "./Notification.controller";
+import { checkBlockedStatus } from "../../middlewares/checkBlock";
+import { UserRole } from "@prisma/client";
 
 
 const router = express.Router();
@@ -16,13 +18,22 @@ router.post(
 router.post(
   "/send",
   auth(),
+  checkBlockedStatus,
   NotificationController.sendNotificationToUser
 );
+
+router.post(
+  "/save",
+  auth(),
+  checkBlockedStatus,
+  NotificationController.saveNotification
+)
 
 // Get all notifications
 router.get(
   "/",
-  auth(),
+  auth(UserRole.ADMIN),
+  checkBlockedStatus,
   NotificationController.getAllNotificationsController
 );
 

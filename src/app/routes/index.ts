@@ -9,6 +9,7 @@ import { estimateFareRoutes } from "../modules/estimateFare/estimateFare.routes"
 import { chatRoutes } from "../../chats/chats.routes";
 import { reviewRoutes } from "../modules/Review/review.route";
 import { PaymentRoutes } from "../modules/Payment/Payment.routes";
+import { NotificationRoutes } from "../modules/Notification/Notification.routes";
 
 
 
@@ -20,10 +21,7 @@ const moduleRoutes = [
     path: "/users",
     route: userRoutes,
   },
-  // {
-  //   path: "/tutor-and-booking",
-  //   route: findTutorAndBookingRoutes
-  // },
+
   {
     path: "/auth",
     route: AuthRoutes,
@@ -59,14 +57,11 @@ const moduleRoutes = [
     path: "/payments",
     route: PaymentRoutes,
   },
-  // {
-  //   path: "/tutors",
-  //   route: tutorRoutes
-  // },
-  // {
-  //   path: "/notifications",
-  //   route: notificationsRoute,
-  // },
+
+  {
+    path: "/notifications",
+    route: NotificationRoutes,
+  },
   // {
   //   path: "/chat-images",
   //   route: chatImageRoutes,

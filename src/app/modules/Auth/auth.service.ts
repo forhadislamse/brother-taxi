@@ -190,7 +190,7 @@ const verifyLogin = async (phoneNumber: string, otp: number, fcmToken?: string) 
     role: user.role
   }, config.jwt.jwt_secret as Secret, config.jwt.expires_in as string);
 
-  return { message: "OTP verification successful", token: token, id:user.id };
+  return { message: "OTP verification successful",  role:user.role, id:user.id ,token: token,};
 };
 
 // change password

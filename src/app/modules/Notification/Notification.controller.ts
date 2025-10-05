@@ -9,7 +9,8 @@ import { NotificationService } from "./Notification.service";
 const sendNotificationToUser = catchAsync(
   async (req: Request, res: Response) => {
     const {
-      deviceToken,
+      // deviceToken,
+      fcmToken,
       title,
       body,
       type = NotificationType.GENERAL,
@@ -18,11 +19,11 @@ const sendNotificationToUser = catchAsync(
       slug = "",
     } = req.body;
 
-    if (!deviceToken || !title || !body) {
+    if (!fcmToken || !title || !body) {
       return sendResponse(res, {
         statusCode: httpStatus.BAD_REQUEST,
         success: false,
-        message: "Device token, title, and body are required!",
+        message: "fcm token, title, and body are required!",
         data: null,
       });
     }
@@ -37,7 +38,7 @@ const sendNotificationToUser = catchAsync(
     };
 
     await NotificationService.sendNotification(
-      deviceToken,
+      fcmToken,
       notificationPayload,
       req.user?.id
     );
@@ -53,7 +54,7 @@ const sendNotificationToUser = catchAsync(
 
 const saveNotification = catchAsync(async (req: Request, res: Response) => {
   const {
-    deviceToken,
+    fcmToken,
     title,
     body,
     type = NotificationType.GENERAL,

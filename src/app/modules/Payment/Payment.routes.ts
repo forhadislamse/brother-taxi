@@ -32,7 +32,7 @@ import { USER_ROLE } from "../../../enums/enums";
 const router = express.Router();
 
 //4.  cash payment
-router.post("/create-payment", auth(), PaymentController.handlePayment);
+router.post("/create-payment", auth(), PaymentController.handleCashPayment);
 //6. get payments for all roles rider/driver/admin
 router.get("/get-payments", auth(), PaymentController.getPayments);
 

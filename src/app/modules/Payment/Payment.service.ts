@@ -18,10 +18,10 @@ import {
   ITransactionFilterRequest,
 } from "./Payment.interface";
 import stripe from "../../../shared/stripe";
-// import { NotificationService } from "../Notifications/Notifications.services";
+import { NotificationService } from "../Notification/Notification.service";
 
 // create  cash payment service
-const handlePayment = async (
+const handleCashPayment = async (
   userToken: string,
   transportId: string,
   paymentMethod: PaymentMethod,
@@ -94,43 +94,43 @@ const handlePayment = async (
         },
       });
 
-      // Send notification to courier about cash payment
-      //   if (carTransport.assignedDriver && carTransport.driver?.fcmToken) {
-      //     await NotificationService.sendNotification(
-      //       carTransport.driver.fcmToken,
-      //       {
-      //         title: "New Parcel With Cash Payment Requested For You",
-      //         body: `You Have a new parcel request with cash payment. Sender has confirmed cash payment of ${carTransport.totalAmount} for order #${carTransport.id}. Please collect the payment upon delivery.`,
-      //         type: NotificationType.PAYMENT,
-      //         data: JSON.stringify({
-      //           transportId: carTransport.id,
-      //           amount: carTransport.totalAmount,
-      //           paymentMethod: PaymentMethod.CASH,
-      //         }),
-      //         targetId: carTransport.id,
-      //         slug: "cash-payment",
-      //       },
-      //       carTransport.assignedDriver
-      //     );
-      //   }
-      //   if (carTransport.assignedDriver) {
-      //     await NotificationService.saveNotification(
-      //       {
-      //         title: "New Parcel With Cash Payment Requested For You",
-      //         body: `You Have a new parcel request with cash payment. Sender has confirmed cash payment of ${carTransport.totalAmount} for order #${carTransport.id}. Please collect the payment upon delivery.`,
-      //         type: NotificationType.PAYMENT,
-      //         data: JSON.stringify({
-      //           transportId: carTransport.id,
-      //           amount: carTransport.totalAmount,
-      //           paymentMethod: PaymentMethod.CASH,
-      //         }),
-      //         targetId: carTransport.id,
-      //         slug: "cash-payment",
-      //         fcmToken: carTransport.driver?.fcmToken ?? undefined,
-      //       },
-      //       carTransport.assignedDriver
-      //     );
-      //   }
+      // Send notification to driver about cash payment
+      if (carTransport.assignedDriver && carTransport.driver?.fcmToken) {
+        await NotificationService.sendNotification(
+          carTransport.driver.fcmToken,
+          {
+            title: "Requested Cash Payment confirmed For You",
+            body: `Sender has confirmed cash payment of ${carTransport.totalAmount} for order #${carTransport.id}. Please collect the payment.`,
+            type: NotificationType.PAYMENT,
+            data: JSON.stringify({
+              transportId: carTransport.id,
+              amount: carTransport.totalAmount,
+              paymentMethod: PaymentMethod.CASH,
+            }),
+            targetId: carTransport.id,
+            slug: "cash-payment",
+          },
+          carTransport.assignedDriver
+        );
+      }
+      if (carTransport.assignedDriver) {
+        await NotificationService.saveNotification(
+          {
+            title: "Requested Cash Payment confirmed For You",
+            body: `Sender has confirmed cash payment of ${carTransport.totalAmount} for order #${carTransport.id}. Please collect the payment.`,
+            type: NotificationType.PAYMENT,
+            data: JSON.stringify({
+              transportId: carTransport.id,
+              amount: carTransport.totalAmount,
+              paymentMethod: PaymentMethod.CASH,
+            }),
+            targetId: carTransport.id,
+            slug: "cash-payment",
+            fcmToken: carTransport.driver?.fcmToken ?? undefined,
+          },
+          carTransport.assignedDriver
+        );
+      }
 
       return { payment };
     }
@@ -204,7 +204,6 @@ const handleWalletPayment = async (
       walletBalance: {
         decrement: carTransport.totalAmount || 0,
       },
-    
     },
   });
 
@@ -219,7 +218,8 @@ const handleWalletPayment = async (
       driverFee:
         (carTransport.totalAmount || 0) - (carTransport.platformFee || 0),
       platformFee: carTransport.platformFee || 0,
-      platformFeeType: (carTransport.platformFeeType as FeeType) || FeeType.PERCENTAGE,
+      platformFeeType:
+        (carTransport.platformFeeType as FeeType) || FeeType.PERCENTAGE,
       paymentMethod: PaymentMethod.WALLET,
       paymentStatus: PaymentStatus.COMPLETED,
     },
@@ -235,16 +235,50 @@ const handleWalletPayment = async (
     },
   });
 
-  // Optional: send notification to driver if needed
+  // send notification to driver if needed
+
+  if (carTransport.driver?.fcmToken) {
+    await NotificationService.sendNotification(
+      carTransport.driver.fcmToken,
+      {
+        title: "Wallet Payment Received",
+        body: `Payment received for ride completed order #${carTransport.id}`,
+        type: NotificationType.PAYMENT,
+        data: JSON.stringify({
+          transportId: carTransport.id,
+          amount: carTransport.totalAmount,
+          paymentMethod: PaymentMethod.WALLET,
+        }),
+        targetId: carTransport.id,
+        slug: "wallet-payment",
+      },
+      carTransport.driver.id
+    );
+  }
+
+  if (carTransport.driver) {
+    await NotificationService.saveNotification(
+      {
+        title: "Wallet Payment Received",
+        body: `Payment received for ride completed order #${carTransport.id}`,
+        type: NotificationType.PAYMENT,
+        data: JSON.stringify({
+          transportId: carTransport.id,
+          amount: carTransport.totalAmount,
+          paymentMethod: PaymentMethod.WALLET,
+        }),
+        targetId: carTransport.id,
+        slug: "wallet-payment",
+      },
+      carTransport.driver.id
+    );
+  }
 
   return {
     payment,
     walletBalance: updatedUser.walletBalance,
   };
 };
-
-
-
 
 // Get payments based on user role and filter
 // const getPayments = async (
@@ -381,7 +415,6 @@ const getPayments = async (
   };
 };
 
-
 // Get all transactions for admin
 const getAllTransactions = async (
   userToken: string,
@@ -441,14 +474,14 @@ const getAllTransactions = async (
   // });
 
   const aggregateResult = await prisma.payment.aggregate({
-  where: {
-    ...where,
-    paymentStatus: { not: "REFUNDED" }, // refund বাদ দেওয়া হলো
-  },
-  _sum: {
-    amount: true,
-  },
-});
+    where: {
+      ...where,
+      paymentStatus: { not: "REFUNDED" }, // refund বাদ দেওয়া হলো
+    },
+    _sum: {
+      amount: true,
+    },
+  });
 
   const allAmount = aggregateResult._sum.amount || 0;
 
@@ -638,12 +671,11 @@ const handleCardPayment = async (
       },
     });
 
-     // Determine paymentStatus based on Stripe status
+    // Determine paymentStatus based on Stripe status
     const paymentStatus =
       paymentIntent.status === "succeeded"
         ? PaymentStatus.COMPLETED
         : PaymentStatus.REQUIRES_CAPTURE;
-
 
     // Create payment record
     const payment = await prisma.payment.create({
@@ -676,42 +708,42 @@ const handleCardPayment = async (
     });
 
     // Send notifications
-    // if (transport.driver?.fcmToken) {
-    //   await NotificationService.sendNotification(
-    //     transport.driver.fcmToken,
-    //     {
-    //       title: "Card Payment Received",
-    //       body: `Payment received for order #${transport.id}`,
-    //       type: NotificationType.PAYMENT,
-    //       data: JSON.stringify({
-    //         transportId: transport.id,
-    //         amount: transport.totalAmount,
-    //         paymentMethod: PaymentMethod.CARD,
-    //       }),
-    //       targetId: transport.id,
-    //       slug: "card-payment",
-    //     },
-    //     transport.driver.id
-    //   );
-    // }
+    if (transport.driver?.fcmToken) {
+      await NotificationService.sendNotification(
+        transport.driver.fcmToken,
+        {
+          title: "Card Payment Received",
+          body: `Payment received for ride completed order #${transport.id}`,
+          type: NotificationType.PAYMENT,
+          data: JSON.stringify({
+            transportId: transport.id,
+            amount: transport.totalAmount,
+            paymentMethod: PaymentMethod.CARD,
+          }),
+          targetId: transport.id,
+          slug: "card-payment",
+        },
+        transport.driver.id
+      );
+    }
 
-    // if (transport.driver) {
-    //   await NotificationService.saveNotification(
-    //     {
-    //       title: "Card Payment Received",
-    //       body: `Payment received for order #${transport.id}`,
-    //       type: NotificationType.PAYMENT,
-    //       data: JSON.stringify({
-    //         transportId: transport.id,
-    //         amount: transport.totalAmount,
-    //         paymentMethod: PaymentMethod.CARD,
-    //       }),
-    //       targetId: transport.id,
-    //       slug: "card-payment",
-    //     },
-    //     transport.driver.id
-    //   );
-    // }
+    if (transport.driver) {
+      await NotificationService.saveNotification(
+        {
+          title: "Card Payment Received",
+          body: `Payment received for ride completed order #${transport.id}`,
+          type: NotificationType.PAYMENT,
+          data: JSON.stringify({
+            transportId: transport.id,
+            amount: transport.totalAmount,
+            paymentMethod: PaymentMethod.CARD,
+          }),
+          targetId: transport.id,
+          slug: "card-payment",
+        },
+        transport.driver.id
+      );
+    }
 
     return { payment };
   } catch (error) {
@@ -757,7 +789,7 @@ const capturePayment = async (
   // Update DB
   await prisma.payment.updateMany({
     where: { stripePaymentIntentId },
-    data: { paymentStatus: PaymentStatus.COMPLETED,paymentDate: new Date() },
+    data: { paymentStatus: PaymentStatus.COMPLETED, paymentDate: new Date() },
   });
   // await prisma.payment.update({
   //   where: { stripePaymentIntentId },
@@ -858,50 +890,50 @@ const handleRefund = async (
         });
 
         // Send notifications to both sender and driver
-        // const notificationPromises = [];
-        // if (payment?.carTransport?.sender?.fcmToken) {
-        //   notificationPromises.push(
-        //     NotificationService.sendNotification(
-        //       payment.carTransport.sender.fcmToken,
-        //       {
-        //         title: "Payment Refunded",
-        //         body: `Your payment for order #${payment.carTransport.id} has been refunded`,
-        //         type: NotificationType.PAYMENT,
-        //         data: JSON.stringify({
-        //           carTransportId: payment.carTransport.id,
-        //           amount: payment.amount,
-        //           refundId: refund.id,
-        //         }),
-        //         targetId: payment.carTransport.id,
-        //         slug: "refund",
-        //       },
-        //       payment.carTransport.userId!
-        //     )
-        //   );
-        // }
+        const notificationPromises = [];
+        if (payment?.carTransport?.sender?.fcmToken) {
+          notificationPromises.push(
+            NotificationService.sendNotification(
+              payment.carTransport.sender.fcmToken,
+              {
+                title: "Payment Refunded",
+                body: `Your payment for ride completed order #${payment.carTransport.id} has been refunded`,
+                type: NotificationType.PAYMENT,
+                data: JSON.stringify({
+                  carTransportId: payment.carTransport.id,
+                  amount: payment.amount,
+                  refundId: refund.id,
+                }),
+                targetId: payment.carTransport.id,
+                slug: "refund",
+              },
+              payment.carTransport.userId!
+            )
+          );
+        }
 
-        // if (payment.carTransport.driver?.fcmToken) {
-        //   notificationPromises.push(
-        //     NotificationService.sendNotification(
-        //       payment.carTransport.driver.fcmToken,
-        //       {
-        //         title: "Payment Refunded",
-        //         body: `Payment for order #${payment.carTransport.id} has been refunded`,
-        //         type: NotificationType.PAYMENT,
-        //         data: JSON.stringify({
-        //           carTransportId: payment.carTransport.id,
-        //           amount: payment.amount,
-        //           refundId: refund.id,
-        //         }),
-        //         targetId: payment.carTransport.id,
-        //         slug: "refund",
-        //       },
-        //       payment.carTransport.driver.id!
-        //     )
-        //   );
-        // }
+        if (payment.carTransport.driver?.fcmToken) {
+          notificationPromises.push(
+            NotificationService.sendNotification(
+              payment.carTransport.driver.fcmToken,
+              {
+                title: "Payment Refunded",
+                body: `Payment for ride completed order #${payment.carTransport.id} has been refunded`,
+                type: NotificationType.PAYMENT,
+                data: JSON.stringify({
+                  carTransportId: payment.carTransport.id,
+                  amount: payment.amount,
+                  refundId: refund.id,
+                }),
+                targetId: payment.carTransport.id,
+                slug: "refund",
+              },
+              payment.carTransport.driver.id!
+            )
+          );
+        }
 
-        // await Promise.all(notificationPromises);
+        await Promise.all(notificationPromises);
       }
 
       return { success: true, refundId: refund.id };
@@ -1055,7 +1087,7 @@ const getRefundedPayments = async (
 };
 
 export const paymentService = {
-  handlePayment,
+  handleCashPayment,
   handleWalletPayment,
   handleCardPayment,
   capturePayment,

@@ -257,7 +257,13 @@ const getMyProfile = async (userToken: string) => {
     }
   });
 
-  return userProfile;
+  if (!userProfile) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  const userWithoutSensitive = omit(userProfile, ["password", "fcmToken"]);
+
+  return userWithoutSensitive;
 };
 
 //get all users
@@ -394,7 +400,16 @@ const updateDriverLicense = async (
     },
   });
 
-  return updatedUser;
+   // Remove sensitive fields before sending back
+  const userWithoutSensitive = omit(updatedUser, [
+    "password",
+    "otp",
+    "otpExpiresAt",
+    "fcmToken",
+    "stripeAccountId",
+  ]);
+
+  return userWithoutSensitive;
 };
 
 
@@ -434,7 +449,15 @@ const updateUserProfile = async (
     },
   });
 
-  return updatedUser;
+   // Remove sensitive info before sending response
+  const userWithoutSensitive = omit(updatedUser, [
+    "password",
+    "otp",
+    "otpExpiresAt",
+    "fcmToken",
+    "stripeAccountId",
+  ]);
+  return userWithoutSensitive;
 };
 
 const driverOnboarding = async (
@@ -509,7 +532,11 @@ if (profileData.gender && profileData.gender.trim() !== "") {
       },
     });
 
-    return { updatedUser, createdVehicle };
+    // remove sensitive data before returning
+    const userWithoutSensitive = omit(updatedUser, ["password", "fcmToken"]);
+
+    return { user: userWithoutSensitive, vehicle: createdVehicle };
+    // return { updatedUser, createdVehicle };
   });
 
   return result;
@@ -555,93 +582,6 @@ if (profileData.gender && profileData.gender.trim() !== "") {
 
   return { user, vehicles };
 };
-
-
-
-// const postDemoVideo = async (file: any, userId: string) => {
-
-//   if (!file) {
-//     throw new ApiError(httpStatus.BAD_REQUEST, "Video File Requierd")
-
-//   }
-
-//   const videosData = await fileUploader.uploadToDigitalOcean(file)
-
-//   if (!videosData.Location) {
-//     throw new ApiError(httpStatus.BAD_REQUEST, "Filed to Upload video")
-//   }
-
-
-//   const user = await prisma.user.findUnique({
-//     where: { id: userId },
-//   });
-
-//   if (!user) {
-//     throw new ApiError(404, "User not found");
-//   }
-
-//   if(user.role !== 'TUTOR') {
-//     throw new ApiError(httpStatus.BAD_REQUEST, "You are not a Tutor!, Only Tutors can upload demo videos");
-//   }
-
-
-//   const data = await prisma.user.update({
-//     where: { id: userId },
-//     data: {
-//       demoClassUrl: videosData.Location
-//     },
-//     select: {
-//       id: true,
-//       fullName: true,
-//       email: true,
-//       phoneNumber: true,
-//       profileImage: true,
-//       role: true,
-//       demoClassUrl: true,
-//       availableDays: true,
-//       about: true,
-//       isTutorApproved: true,
-//       status: true,
-//       city: true,
-//       gender: true,
-//       createdAt: true,
-//       updatedAt: true,
-//     }
-//   })
-
-
-//   return data
-// }
-
-// Fetch all drivers pending admin approval
-
-// const getDriversPendingApproval = async () => {
-//   const drivers = await prisma.user.findMany({
-//     where: {
-//       role: "DRIVER",
-//       adminApprovedStatus: "PENDING",
-//     },
-//     select: {
-//       id: true,
-//       fullName: true,
-//       phoneNumber: true,
-//       createdAt: true,
-//       role: true,
-//       adminApprovedStatus: true,
-//     },
-//   });
-
-//   if (!drivers.length) {
-//     throw new ApiError(httpStatus.NOT_FOUND, "No drivers pending approval");
-//   }
-
-//   return drivers;
-// };
-
-// Update driver approval status
-
-
-// Get all drivers with adminApprovedStatus = PENDING (ADMIN ONLY)
 
 
 const getDriversPendingApproval = async (userToken: string) => {

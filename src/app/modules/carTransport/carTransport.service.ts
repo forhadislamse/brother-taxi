@@ -322,7 +322,6 @@ const getRidePlanById = async (userId: string, planId: string) => {
   return ridePlan;
 };
 
-
 // const createCarTransport = async (
 //   token: string,
 //   payload: any,
@@ -549,6 +548,8 @@ const getCompletedRideFromDb = async (rideId: string, userId: string) => {
     throw new ApiError(httpStatus.BAD_REQUEST, "Ride not completed yet");
   }
 
+  
+
   return ride;
 };
 
@@ -640,6 +641,7 @@ const getCarTransportById = async (id: string): Promise<any | null> => {
       fullName: driver.fullName,
       phone: driver.phone,
       profileImage: driver.profileImage,
+      vehicleId: driver.vehicleId,
       lat: driver.lat,
       lng: driver.lng,
       distanceFromPickup:

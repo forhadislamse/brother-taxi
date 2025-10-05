@@ -3,7 +3,7 @@ import stripe from "../../../shared/stripe";
 import prisma from "../../../shared/prisma";
 import { PaymentStatus, NotificationType } from "@prisma/client";
 import config from "../../../config";
-// import { NotificationService } from "../Notifications/Notifications.services";
+import { NotificationService } from "../Notification/Notification.service";
 
 export const handleStripeWebhook = async (req: Request, res: Response) => {
   const sig = req.headers["stripe-signature"];
@@ -48,23 +48,23 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
           });
 
           // Send notifications
-        //   if (transport.sender?.fcmToken) {
-        //     await NotificationService.sendNotification(
-        //       transport.sender.fcmToken,
-        //       {
-        //         title: "Payment Successful",
-        //         body: `Your payment for order #${transport.id} was successful`,
-        //         type: NotificationType.PAYMENT,
-        //         data: JSON.stringify({
-        //           transportId: transport.id,
-        //           amount: paymentIntent.amount / 100,
-        //         }),
-        //         targetId: transport.id,
-        //         slug: "payment-success",
-        //       },
-        //       transport.userId!
-        //     );
-        //   }
+          if (transport.sender?.fcmToken) {
+            await NotificationService.sendNotification(
+              transport.sender.fcmToken,
+              {
+                title: "Payment Successful",
+                body: `Your payment for order #${transport.id} was successful`,
+                type: NotificationType.PAYMENT,
+                data: JSON.stringify({
+                  transportId: transport.id,
+                  amount: paymentIntent.amount / 100,
+                }),
+                targetId: transport.id,
+                slug: "payment-success",
+              },
+              transport.userId!
+            );
+          }
         }
         break;
 
@@ -89,23 +89,23 @@ export const handleStripeWebhook = async (req: Request, res: Response) => {
             },
           });
 
-        //   if (transport.sender?.fcmToken) {
-        //     await NotificationService.sendNotification(
-        //       transport.sender.fcmToken,
-        //       {
-        //         title: "Payment Failed",
-        //         body: `Your payment for order #${transport.id} has failed. Please try again.`,
-        //         type: NotificationType.PAYMENT,
-        //         data: JSON.stringify({
-        //           transportId: transport.id,
-        //           error: failedPayment.last_payment_error?.message,
-        //         }),
-        //         targetId: transport.id,
-        //         slug: "payment-failed",
-        //       },
-        //       transport.userId!
-        //     );
-        //   }
+          if (transport.sender?.fcmToken) {
+            await NotificationService.sendNotification(
+              transport.sender.fcmToken,
+              {
+                title: "Payment Failed",
+                body: `Your payment for order #${transport.id} has failed. Please try again.`,
+                type: NotificationType.PAYMENT,
+                data: JSON.stringify({
+                  transportId: transport.id,
+                  error: failedPayment.last_payment_error?.message,
+                }),
+                targetId: transport.id,
+                slug: "payment-failed",
+              },
+              transport.userId!
+            );
+          }
         }
         break;
 
