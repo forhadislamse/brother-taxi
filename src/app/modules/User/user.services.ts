@@ -383,6 +383,35 @@ const adminDashboardUserLength = async () => {
   };
 };
 
+// const updateDriverLicense = async (
+//   userId: string,
+//   licenseFrontSide?: string,
+//   licenseBackSide?: string
+// ) => {
+//   const user = await prisma.user.findUnique({ where: { id: userId } });
+//   if (!user) throw new ApiError(404, "User not found");
+
+//   const updatedUser = await prisma.user.update({
+//     where: { id: userId },
+//     data: {
+//       licenseFrontSide: licenseFrontSide || user.licenseFrontSide,
+//       licenseBackSide: licenseBackSide || user.licenseBackSide,
+//       updatedAt: new Date(),
+//     },
+//   });
+
+//    // Remove sensitive fields before sending back
+//   const userWithoutSensitive = omit(updatedUser, [
+//     "password",
+//     "otp",
+//     "otpExpiresAt",
+//     "fcmToken",
+//     "stripeAccountId",
+//   ]);
+
+//   return userWithoutSensitive;
+// };
+
 const updateDriverLicense = async (
   userId: string,
   licenseFrontSide?: string,
@@ -391,16 +420,22 @@ const updateDriverLicense = async (
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new ApiError(404, "User not found");
 
+  // if approved driver change license , then status will pending again and have to re-approved by admin
+  let newStatus = user.adminApprovedStatus;
+  if (user.adminApprovedStatus === "APPROVED" && (licenseFrontSide || licenseBackSide)) {
+    newStatus = "PENDING";
+  }
+
   const updatedUser = await prisma.user.update({
     where: { id: userId },
     data: {
       licenseFrontSide: licenseFrontSide || user.licenseFrontSide,
       licenseBackSide: licenseBackSide || user.licenseBackSide,
+      adminApprovedStatus: newStatus,
       updatedAt: new Date(),
     },
   });
 
-   // Remove sensitive fields before sending back
   const userWithoutSensitive = omit(updatedUser, [
     "password",
     "otp",
@@ -411,6 +446,7 @@ const updateDriverLicense = async (
 
   return userWithoutSensitive;
 };
+
 
 
 const updateUserProfile = async (
@@ -459,6 +495,64 @@ const updateUserProfile = async (
   ]);
   return userWithoutSensitive;
 };
+
+// const updateUserProfile = async (
+//   userId: string,
+//   updateData: Partial<IUser>,
+//   files?: { [fieldname: string]: Express.Multer.File[] }
+// ) => {
+//   const user = await prisma.user.findUnique({ where: { id: userId } });
+//   if (!user) throw new ApiError(404, "User not found");
+
+//   // Prepare updated fields
+//   const updatedFields: any = { ...updateData };
+
+//   // Handle profile image upload
+//   if (files?.profileImage?.[0]) {
+//     const uploaded = await fileUploader.uploadToDigitalOcean(files.profileImage[0]);
+//     updatedFields.profileImage = uploaded.Location;
+//   }
+
+//   // Handle license front side
+//   if (files?.licenseFrontSide?.[0]) {
+//     const uploaded = await fileUploader.uploadToDigitalOcean(files.licenseFrontSide[0]);
+//     updatedFields.licenseFrontSide = uploaded.Location;
+//   }
+
+//   // Handle license back side
+//   if (files?.licenseBackSide?.[0]) {
+//     const uploaded = await fileUploader.uploadToDigitalOcean(files.licenseBackSide[0]);
+//     updatedFields.licenseBackSide = uploaded.Location;
+//   }
+
+//   // Validate gender if provided
+//   if (updateData.gender && updateData.gender.trim() !== "") {
+//     if (!Object.values(Gender).includes(updateData.gender as Gender)) {
+//       throw new ApiError(400, "Invalid gender value");
+//     }
+//   }
+
+//   // Delete sensitive fields
+//   delete updatedFields.password;
+//   delete updatedFields.otp;
+//   delete updatedFields.otpExpiresAt;
+
+//   const updatedUser = await prisma.user.update({
+//     where: { id: userId },
+//     data: { ...updatedFields, updatedAt: new Date() },
+//   });
+
+//   const userWithoutSensitive = omit(updatedUser, [
+//     "password",
+//     "otp",
+//     "otpExpiresAt",
+//     "fcmToken",
+//     "stripeAccountId",
+//   ]);
+
+//   return userWithoutSensitive;
+// };
+
 
 const driverOnboarding = async (
   userId: string,

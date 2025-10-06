@@ -163,6 +163,24 @@ const updateProfileController = catchAsync(async (req: Request, res: Response) =
   });
 });
 
+// const updateProfileController = catchAsync(async (req: Request, res: Response) => {
+//   const userId = req.user.id;
+//   const updateData = req.body.data ? JSON.parse(req.body.data) : {};
+//   const files = req.files as { [fieldname: string]: Express.Multer.File[] } | undefined;
+
+//   const updatedUser = await userService.updateUserProfile(userId, updateData, files);
+
+//   sendResponse(res, {
+//     statusCode: httpStatus.OK,
+//     success: true,
+//     message: "User profile updated successfully",
+//     data: updatedUser,
+//   });
+// });
+
+
+
+
 // Get all drivers with adminApprovedStatus = PENDING
 // const getDriversPendingApproval = catchAsync(async (req: Request, res: Response) => {
 //   const result = await userService.getDriversPendingApproval();
@@ -198,19 +216,6 @@ const updateDriverApprovalStatus = catchAsync(async (req: Request, res: Response
   });
 });
 
-// const postDemoVideo = async(req: any, res: Response) => {
-
-//   const userId = req.user.id;
-//   const file = req.file
-//   const result = await userService.postDemoVideo(file, userId)
-
-//   sendResponse(res, {
-//     statusCode: httpStatus.OK,
-//     success: true,
-//     message: "User profile updated successfully",
-//     data: result,
-//   });
-// }
 
 const toggleOnlineStatus = catchAsync(async (req: Request, res: Response) => {
   const token = req.headers.authorization;

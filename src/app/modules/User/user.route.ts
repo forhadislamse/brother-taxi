@@ -20,6 +20,12 @@ const uploadDriverOnboarding = upload.fields([
   { name: "vehicleImage", maxCount: 1 },
 ]);
 
+const uploadProfile = upload.fields([
+  { name: "profileImage", maxCount: 1 },
+  { name: "licenseFrontSide", maxCount: 1 },
+  { name: "licenseBackSide", maxCount: 1 },
+]);
+
 const licenseUpload = upload.fields([
   // { name: "DriverLicenseImage", maxCount: 1 },
   { name: "licenseFrontSide", maxCount: 1 },
@@ -48,6 +54,15 @@ router.patch(
   licenseUpload,
   userController.uploadDriverLicense
 );
+
+
+// router.patch(
+//   "/upload-profile",
+//   auth(),
+//   uploadProfile,
+//   userController.uploadDriverLicense
+// );
+
 
 router.patch(
   "/update-profile",
