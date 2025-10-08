@@ -222,25 +222,25 @@ const createCard = catchAsync(
   }
 );
 
-const handleWalletPayment = catchAsync(
-  async (req: Request, res: Response, next: NextFunction) => {
-    const token = req.headers.authorization;
-    // const { transportId } = req.body;
-    const { transportId, paymentMethod, cardId } = req.body as IPaymentRequest;
+// const handleWalletPayment = catchAsync(
+//   async (req: Request, res: Response, next: NextFunction) => {
+//     const token = req.headers.authorization;
+//     // const { transportId } = req.body;
+//     const { transportId, paymentMethod, cardId } = req.body as IPaymentRequest;
 
-    const result = await paymentService.handleWalletPayment(token!,
-    transportId,
-    paymentMethod,
-    cardId);
+//     const result = await paymentService.handleWalletPayment(token!,
+//     transportId,
+//     paymentMethod,
+//     cardId);
 
-    sendResponse(res, {
-      statusCode: httpStatus.OK,
-      success: true,
-      message: "Payment completed using wallet",
-      data: result,
-    });
-  }
-);
+//     sendResponse(res, {
+//       statusCode: httpStatus.OK,
+//       success: true,
+//       message: "Payment completed using wallet",
+//       data: result,
+//     });
+//   }
+// );
 
 
 
@@ -270,6 +270,6 @@ export const PaymentController = {
   getPayments,
   getAllTransactions,
   createCard,
-  handleWalletPayment,
+  // handleWalletPayment,
   getRefundedPayments,
 };

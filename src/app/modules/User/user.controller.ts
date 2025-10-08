@@ -25,8 +25,6 @@ const createUser = catchAsync(async (req: Request, res: Response) => {
 });
 
 
-
-
 const getMyProfile = catchAsync(async (req: Request, res: Response) => {
   const userToken = req.headers.authorization;
 

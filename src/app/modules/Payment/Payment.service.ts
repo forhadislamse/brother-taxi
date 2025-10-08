@@ -140,145 +140,145 @@ const handleCashPayment = async (
   }
 };
 
-const handleWalletPayment = async (
-  userToken: string,
-  transportId: string,
-  paymentMethod: PaymentMethod,
-  cardId?: string
-) => {
-  // Verify user token
-  const decodedToken = jwtHelpers.verifyToken(
-    userToken,
-    process.env.JWT_SECRET!
-  );
+// const handleWalletPayment = async (
+//   userToken: string,
+//   transportId: string,
+//   paymentMethod: PaymentMethod,
+//   cardId?: string
+// ) => {
+//   // Verify user token
+//   const decodedToken = jwtHelpers.verifyToken(
+//     userToken,
+//     process.env.JWT_SECRET!
+//   );
 
-  // Fetch user with walletBalance
-  const user = await prisma.user.findUnique({
-    where: { id: decodedToken.id },
-    select: {
-      id: true,
-      fullName: true,
-      walletBalance: true,
-    },
-  });
+//   // Fetch user with walletBalance
+//   const user = await prisma.user.findUnique({
+//     where: { id: decodedToken.id },
+//     select: {
+//       id: true,
+//       fullName: true,
+//       walletBalance: true,
+//     },
+//   });
 
-  if (!user) {
-    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
-  }
+//   if (!user) {
+//     throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+//   }
 
-  // Fetch transport
-  const carTransport = await prisma.carTransport.findUnique({
-    where: { id: transportId },
-    include: { driver: true },
-  });
+//   // Fetch transport
+//   const carTransport = await prisma.carTransport.findUnique({
+//     where: { id: transportId },
+//     include: { driver: true },
+//   });
 
-  if (!carTransport) {
-    throw new ApiError(httpStatus.NOT_FOUND, "Car transport not found");
-  }
+//   if (!carTransport) {
+//     throw new ApiError(httpStatus.NOT_FOUND, "Car transport not found");
+//   }
 
-  // Check user authorization
-  if (carTransport.userId !== decodedToken.id) {
-    throw new ApiError(httpStatus.FORBIDDEN, "Not authorized to make payment");
-  }
+//   // Check user authorization
+//   if (carTransport.userId !== decodedToken.id) {
+//     throw new ApiError(httpStatus.FORBIDDEN, "Not authorized to make payment");
+//   }
 
-  // Check if payment already completed
-  if (
-    carTransport.paymentStatus === PaymentStatus.COMPLETED ||
-    carTransport.paymentStatus === PaymentStatus.REQUIRES_CAPTURE
-  ) {
-    throw new ApiError(
-      httpStatus.BAD_REQUEST,
-      "Payment has already been processed for this transport"
-    );
-  }
+//   // Check if payment already completed
+//   if (
+//     carTransport.paymentStatus === PaymentStatus.COMPLETED ||
+//     carTransport.paymentStatus === PaymentStatus.REQUIRES_CAPTURE
+//   ) {
+//     throw new ApiError(
+//       httpStatus.BAD_REQUEST,
+//       "Payment has already been processed for this transport"
+//     );
+//   }
 
-  // Check wallet balance
-  if ((user.walletBalance || 0) < (carTransport.totalAmount || 0)) {
-    throw new ApiError(httpStatus.BAD_REQUEST, "Insufficient wallet balance");
-  }
+//   // Check wallet balance
+//   if ((user.walletBalance || 0) < (carTransport.totalAmount || 0)) {
+//     throw new ApiError(httpStatus.BAD_REQUEST, "Insufficient wallet balance");
+//   }
 
-  // Deduct wallet balance
-  const updatedUser = await prisma.user.update({
-    where: { id: user.id },
-    data: {
-      walletBalance: {
-        decrement: carTransport.totalAmount || 0,
-      },
-    },
-  });
+//   // Deduct wallet balance
+//   const updatedUser = await prisma.user.update({
+//     where: { id: user.id },
+//     data: {
+//       walletBalance: {
+//         decrement: carTransport.totalAmount || 0,
+//       },
+//     },
+//   });
 
-  // Create payment record
-  const payment = await prisma.payment.create({
-    data: {
-      paymentId: `wallet_${Date.now()}`,
-      transportId: carTransport.id,
-      senderId: carTransport.userId,
-      receiverId: carTransport.assignedDriver,
-      amount: carTransport.totalAmount || 0,
-      driverFee:
-        (carTransport.totalAmount || 0) - (carTransport.platformFee || 0),
-      platformFee: carTransport.platformFee || 0,
-      platformFeeType:
-        (carTransport.platformFeeType as FeeType) || FeeType.PERCENTAGE,
-      paymentMethod: PaymentMethod.WALLET,
-      paymentStatus: PaymentStatus.COMPLETED,
-    },
-  });
+//   // Create payment record
+//   const payment = await prisma.payment.create({
+//     data: {
+//       paymentId: `wallet_${Date.now()}`,
+//       transportId: carTransport.id,
+//       senderId: carTransport.userId,
+//       receiverId: carTransport.assignedDriver,
+//       amount: carTransport.totalAmount || 0,
+//       driverFee:
+//         (carTransport.totalAmount || 0) - (carTransport.platformFee || 0),
+//       platformFee: carTransport.platformFee || 0,
+//       platformFeeType:
+//         (carTransport.platformFeeType as FeeType) || FeeType.PERCENTAGE,
+//       paymentMethod: PaymentMethod.WALLET,
+//       paymentStatus: PaymentStatus.COMPLETED,
+//     },
+//   });
 
-  // Update transport
-  await prisma.carTransport.update({
-    where: { id: carTransport.id },
-    data: {
-      paymentStatus: PaymentStatus.COMPLETED,
-      isPayment: true,
-      paymentMethod: PaymentMethod.WALLET,
-    },
-  });
+//   // Update transport
+//   await prisma.carTransport.update({
+//     where: { id: carTransport.id },
+//     data: {
+//       paymentStatus: PaymentStatus.COMPLETED,
+//       isPayment: true,
+//       paymentMethod: PaymentMethod.WALLET,
+//     },
+//   });
 
-  // send notification to driver if needed
+//   // send notification to driver if needed
 
-  if (carTransport.driver?.fcmToken) {
-    await NotificationService.sendNotification(
-      carTransport.driver.fcmToken,
-      {
-        title: "Wallet Payment Received",
-        body: `Payment received for ride completed order #${carTransport.id}`,
-        type: NotificationType.PAYMENT,
-        data: JSON.stringify({
-          transportId: carTransport.id,
-          amount: carTransport.totalAmount,
-          paymentMethod: PaymentMethod.WALLET,
-        }),
-        targetId: carTransport.id,
-        slug: "wallet-payment",
-      },
-      carTransport.driver.id
-    );
-  }
+//   if (carTransport.driver?.fcmToken) {
+//     await NotificationService.sendNotification(
+//       carTransport.driver.fcmToken,
+//       {
+//         title: "Wallet Payment Received",
+//         body: `Payment received for ride completed order #${carTransport.id}`,
+//         type: NotificationType.PAYMENT,
+//         data: JSON.stringify({
+//           transportId: carTransport.id,
+//           amount: carTransport.totalAmount,
+//           paymentMethod: PaymentMethod.WALLET,
+//         }),
+//         targetId: carTransport.id,
+//         slug: "wallet-payment",
+//       },
+//       carTransport.driver.id
+//     );
+//   }
 
-  if (carTransport.driver) {
-    await NotificationService.saveNotification(
-      {
-        title: "Wallet Payment Received",
-        body: `Payment received for ride completed order #${carTransport.id}`,
-        type: NotificationType.PAYMENT,
-        data: JSON.stringify({
-          transportId: carTransport.id,
-          amount: carTransport.totalAmount,
-          paymentMethod: PaymentMethod.WALLET,
-        }),
-        targetId: carTransport.id,
-        slug: "wallet-payment",
-      },
-      carTransport.driver.id
-    );
-  }
+//   if (carTransport.driver) {
+//     await NotificationService.saveNotification(
+//       {
+//         title: "Wallet Payment Received",
+//         body: `Payment received for ride completed order #${carTransport.id}`,
+//         type: NotificationType.PAYMENT,
+//         data: JSON.stringify({
+//           transportId: carTransport.id,
+//           amount: carTransport.totalAmount,
+//           paymentMethod: PaymentMethod.WALLET,
+//         }),
+//         targetId: carTransport.id,
+//         slug: "wallet-payment",
+//       },
+//       carTransport.driver.id
+//     );
+//   }
 
-  return {
-    payment,
-    walletBalance: updatedUser.walletBalance,
-  };
-};
+//   return {
+//     payment,
+//     walletBalance: updatedUser.walletBalance,
+//   };
+// };
 
 // Get payments based on user role and filter
 // const getPayments = async (
@@ -1088,7 +1088,7 @@ const getRefundedPayments = async (
 
 export const paymentService = {
   handleCashPayment,
-  handleWalletPayment,
+  // handleWalletPayment,
   handleCardPayment,
   capturePayment,
   createStripeAccount,

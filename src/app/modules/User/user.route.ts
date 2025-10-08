@@ -13,18 +13,29 @@ const router = express.Router();
 const storage = multer.memoryStorage();
 const upload = multer({ storage });
 
+// const uploadDriverOnboarding = upload.fields([
+//   { name: "profileImage", maxCount: 1 },
+//   { name: "licenseFrontSide", maxCount: 1 },
+//   { name: "licenseBackSide", maxCount: 1 },
+//   { name: "vehicleImage", maxCount: 1 },
+// ]);
+
 const uploadDriverOnboarding = upload.fields([
   { name: "profileImage", maxCount: 1 },
   { name: "licenseFrontSide", maxCount: 1 },
   { name: "licenseBackSide", maxCount: 1 },
   { name: "vehicleImage", maxCount: 1 },
+  { name: "idFrontImage", maxCount: 1 },        // ID/NID front
+  { name: "idBackImage", maxCount: 1 },         // ID/NID back
+  { name: "judicialRecord", maxCount: 5 },
+  { name: "compulsoryInsurance", maxCount: 5 },
 ]);
 
-const uploadProfile = upload.fields([
-  { name: "profileImage", maxCount: 1 },
-  { name: "licenseFrontSide", maxCount: 1 },
-  { name: "licenseBackSide", maxCount: 1 },
-]);
+// const uploadProfile = upload.fields([
+//   { name: "profileImage", maxCount: 1 },
+//   { name: "licenseFrontSide", maxCount: 1 },
+//   { name: "licenseBackSide", maxCount: 1 },
+// ]);
 
 const licenseUpload = upload.fields([
   // { name: "DriverLicenseImage", maxCount: 1 },

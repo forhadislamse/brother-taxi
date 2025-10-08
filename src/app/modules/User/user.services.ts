@@ -554,6 +554,88 @@ const updateUserProfile = async (
 // };
 
 
+// const driverOnboarding = async (
+//   userId: string,
+//   profileData: Partial<IUser>,
+//   vehicleData: any,
+//   files: { [fieldname: string]: Express.Multer.File[] }
+// ) => {
+//   const user = await prisma.user.findUnique({ where: { id: userId } });
+//   if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+
+//   // Check role manually
+//   if (user.role !== "DRIVER") {
+//     throw new ApiError(httpStatus.FORBIDDEN, "Only drivers can complete onboarding");
+//   }
+
+//   // Handle file uploads
+//   let profileImage: string | undefined;
+//   let licenseFrontSide: string | undefined;
+//   let licenseBackSide: string | undefined;
+//   let vehicleImage: string | undefined;
+
+
+//   if (files?.profileImage?.[0]) {
+//     const uploaded = await fileUploader.uploadToDigitalOcean(files.profileImage[0]);
+//     profileImage = uploaded.Location;
+//   }
+//   if (files?.licenseFrontSide?.[0]) {
+//     const uploaded = await fileUploader.uploadToDigitalOcean(files.licenseFrontSide[0]);
+//     licenseFrontSide = uploaded.Location;
+//   }
+//   if (files?.licenseBackSide?.[0]) {
+//     const uploaded = await fileUploader.uploadToDigitalOcean(files.licenseBackSide[0]);
+//     licenseBackSide = uploaded.Location;
+//   }
+//   if (files?.vehicleImage?.[0]) {
+//     const uploaded = await fileUploader.uploadToDigitalOcean(files.vehicleImage[0]);
+//     vehicleImage = uploaded.Location;
+//   }
+
+  
+//  let genderValue: Gender | undefined = undefined;
+
+// if (profileData.gender && profileData.gender.trim() !== "") {
+//   if (Object.values(Gender).includes(profileData.gender as Gender)) {
+//     genderValue = profileData.gender as Gender;
+//   } else {
+//     throw new ApiError(400, "Invalid gender value");
+//   }
+// }
+//   // Transaction: Profile + License + Vehicle → সব একসাথে
+//   const result = await prisma.$transaction(async (tx) => {
+//     // 1. Update User Profile + License
+//     const updatedUser = await tx.user.update({
+//       where: { id: userId },
+//       data: {
+//         ...profileData,
+//         gender:genderValue,
+//         profileImage: profileImage || user.profileImage,
+//         licenseFrontSide: licenseFrontSide || user.licenseFrontSide,
+//         licenseBackSide: licenseBackSide || user.licenseBackSide,
+//         updatedAt: new Date(),
+//       },
+//     });
+
+//     // 2. Create Vehicle
+//     const createdVehicle = await tx.vehicle.create({
+//       data: {
+//         ...vehicleData,
+//         image: vehicleImage,
+//         userId: userId,
+//       },
+//     });
+
+//     // remove sensitive data before returning
+//     const userWithoutSensitive = omit(updatedUser, ["password", "fcmToken"]);
+
+//     return { user: userWithoutSensitive, vehicle: createdVehicle };
+//     // return { updatedUser, createdVehicle };
+//   });
+
+//   return result;
+// };
+
 const driverOnboarding = async (
   userId: string,
   profileData: Partial<IUser>,
@@ -563,7 +645,7 @@ const driverOnboarding = async (
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User not found");
 
-  // Check role manually
+  // Role check
   if (user.role !== "DRIVER") {
     throw new ApiError(httpStatus.FORBIDDEN, "Only drivers can complete onboarding");
   }
@@ -573,46 +655,71 @@ const driverOnboarding = async (
   let licenseFrontSide: string | undefined;
   let licenseBackSide: string | undefined;
   let vehicleImage: string | undefined;
+  let idFrontImage: string | undefined;
+  let idBackImage: string | undefined;
+  let judicialRecord: string[] = [];
+  let compulsoryInsurance: string[] = [];
 
+  // single image upload helper
+  const uploadSingle = async (fileArr?: Express.Multer.File[]) => {
+    if (fileArr && fileArr.length > 0) {
+      const uploaded = await fileUploader.uploadToDigitalOcean(fileArr[0]);
+      return uploaded.Location;
+    }
+    return undefined;
+  };
 
-  if (files?.profileImage?.[0]) {
-    const uploaded = await fileUploader.uploadToDigitalOcean(files.profileImage[0]);
-    profileImage = uploaded.Location;
-  }
-  if (files?.licenseFrontSide?.[0]) {
-    const uploaded = await fileUploader.uploadToDigitalOcean(files.licenseFrontSide[0]);
-    licenseFrontSide = uploaded.Location;
-  }
-  if (files?.licenseBackSide?.[0]) {
-    const uploaded = await fileUploader.uploadToDigitalOcean(files.licenseBackSide[0]);
-    licenseBackSide = uploaded.Location;
-  }
-  if (files?.vehicleImage?.[0]) {
-    const uploaded = await fileUploader.uploadToDigitalOcean(files.vehicleImage[0]);
-    vehicleImage = uploaded.Location;
+  // multiple images upload helper
+  const uploadMultiple = async (fileArr?: Express.Multer.File[]) => {
+    const urls: string[] = [];
+    if (fileArr && fileArr.length > 0) {
+      for (const file of fileArr) {
+        const uploaded = await fileUploader.uploadToDigitalOcean(file);
+        urls.push(uploaded.Location);
+      }
+    }
+    return urls;
+  };
+
+  // Upload files
+  profileImage = await uploadSingle(files?.profileImage);
+  licenseFrontSide = await uploadSingle(files?.licenseFrontSide);
+  licenseBackSide = await uploadSingle(files?.licenseBackSide);
+  vehicleImage = await uploadSingle(files?.vehicleImage);
+  idFrontImage = await uploadSingle(files?.idFrontImage);
+  idBackImage = await uploadSingle(files?.idBackImage);
+  judicialRecord = await uploadMultiple(files?.judicialRecord);
+  compulsoryInsurance = await uploadMultiple(files?.compulsoryInsurance);
+
+  // Gender validation
+  let genderValue: Gender | undefined = undefined;
+  if (profileData.gender && profileData.gender.trim() !== "") {
+    if (Object.values(Gender).includes(profileData.gender as Gender)) {
+      genderValue = profileData.gender as Gender;
+    } else {
+      throw new ApiError(400, "Invalid gender value");
+    }
   }
 
-  
- let genderValue: Gender | undefined = undefined;
-
-if (profileData.gender && profileData.gender.trim() !== "") {
-  if (Object.values(Gender).includes(profileData.gender as Gender)) {
-    genderValue = profileData.gender as Gender;
-  } else {
-    throw new ApiError(400, "Invalid gender value");
-  }
-}
-  // Transaction: Profile + License + Vehicle → সব একসাথে
+  // Transaction: Profile + Vehicle update
   const result = await prisma.$transaction(async (tx) => {
-    // 1. Update User Profile + License
+    // 1. Update User Profile + Documents
     const updatedUser = await tx.user.update({
       where: { id: userId },
       data: {
         ...profileData,
-        gender:genderValue,
+        gender: genderValue,
         profileImage: profileImage || user.profileImage,
         licenseFrontSide: licenseFrontSide || user.licenseFrontSide,
         licenseBackSide: licenseBackSide || user.licenseBackSide,
+        idFrontImage: idFrontImage || user.idFrontImage,
+        idBackImage: idBackImage || user.idBackImage,
+        judicialRecord: judicialRecord.length
+          ? judicialRecord
+          : user.judicialRecord,
+        compulsoryInsurance: compulsoryInsurance.length
+          ? compulsoryInsurance
+          : user.compulsoryInsurance,
         updatedAt: new Date(),
       },
     });
@@ -626,15 +733,14 @@ if (profileData.gender && profileData.gender.trim() !== "") {
       },
     });
 
-    // remove sensitive data before returning
     const userWithoutSensitive = omit(updatedUser, ["password", "fcmToken"]);
-
     return { user: userWithoutSensitive, vehicle: createdVehicle };
-    // return { updatedUser, createdVehicle };
   });
 
   return result;
 };
+
+
 
  const getDriverOnboarding = async (userId: string) => {
   const user = await prisma.user.findUnique({
