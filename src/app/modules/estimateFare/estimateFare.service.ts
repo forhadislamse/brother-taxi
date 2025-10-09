@@ -7,11 +7,11 @@ import { calculateDistance } from "../../../shared/calculateDistance";
 
 
 const calculateFare = async (token: string, payload: any) => {
-  // 1️⃣ Token decode
+  // Token decode
   const decodedToken = jwtHelpers.verifyToken(token, config.jwt.jwt_secret!);
   const userId = decodedToken.id;
 
-  // 2️⃣ Distance calculate
+  // Distance calculate
   const distance = calculateDistance(
     payload.pickupLat,
     payload.pickupLng,
@@ -19,28 +19,41 @@ const calculateFare = async (token: string, payload: any) => {
     payload.dropOffLng
   );
 
-  // 3️⃣ Active fare fetch
+  // Active fare fetch
   const activeFare = await prisma.fare.findFirst({
     where: { isActive: true },
     orderBy: { createdAt: "desc" },
   });
   if (
     !activeFare ||
-    activeFare.baseFare == null ||
+    // activeFare.baseFare == null ||
+    activeFare.costPerMin == null ||
     activeFare.costPerKm == null ||
     activeFare.minimumFare == null
   ) {
     throw new Error("Active fare or required fare properties not found");
   }
 
-  // 4️⃣ Total fare (distance only, time ignored)
+  // // Total fare (distance only, time ignored)
 
-  let totalFare = activeFare.baseFare + distance * activeFare.costPerKm;
-  if (totalFare < activeFare.minimumFare) {
-    totalFare = activeFare.minimumFare;
-  }
+  // let totalFare = activeFare.baseFare + distance * activeFare.costPerKm;
+  // if (totalFare < activeFare.minimumFare) {
+  //   totalFare = activeFare.minimumFare;
+  // }
 
-  // 5️⃣ Optionally, save in DB for reference
+    const minimumFare = activeFare.minimumFare;
+
+  // Extra distance fare (after first 5 km)
+  const extraDistanceFare = distance > 5 ? (distance - 5) * activeFare.costPerKm : 0;
+
+  // Extra ride time fare (after first 5 km)
+  const rideDuration = payload.duration ?? 0;
+  const extraTimeFare = distance > 5 ? rideDuration * activeFare.costPerMin : 0;
+
+  // Total fare
+  const totalFare = minimumFare + extraDistanceFare + extraTimeFare;
+
+  // Optionally, save in DB for reference
   await prisma.estimateFare.create({
     data: {
       userId,
@@ -52,11 +65,11 @@ const calculateFare = async (token: string, payload: any) => {
       dropOffLng: payload.dropOffLng,
       distance,
       totalFare,
-      baseFare: activeFare.baseFare,
+      // baseFare: activeFare.baseFare,
       costPerKm: activeFare.costPerKm,
       costPerMin: activeFare.costPerMin ?? 0,
       minimumFare: activeFare.minimumFare,
-      waitingPerMin: activeFare.waitingPerMin ?? 0,
+      // waitingPerMin: activeFare.waitingPerMin ?? 0,
     },
   });
 
@@ -66,81 +79,57 @@ const calculateFare = async (token: string, payload: any) => {
     pickupLocation: { lat: payload.pickupLat, lng: payload.pickupLng },
     dropOffLocation: { lat: payload.dropOffLat, lng: payload.dropOffLng },
     distance: distance.toFixed(2),
-    baseFare: activeFare.baseFare,
+    // baseFare: activeFare.baseFare,
     costPerKm: activeFare.costPerKm,
     costPerMin: activeFare.costPerMin,
     minimumFare: activeFare.minimumFare,
-    waitingPerMin: activeFare.waitingPerMin,
+    extraDistanceFare,
+      extraTimeFare,
+    // waitingPerMin: activeFare.waitingPerMin,
     totalFare: Math.round(totalFare),
   };
 };
-// const getMyEstimateFareList = async (user: any) => {
+
+// const getMyEstimateFareList = async (userId: string) => {
+//   // Rider এর estimates নাও
 //   const estimates = await prisma.estimateFare.findMany({
-//     where: { userId: user.id },
+//     where: { userId },
 //     orderBy: { createdAt: "desc" },
 //   });
-//   // Latest active fare
+
+//   // Latest fare config নাও
 //   const activeFare = await prisma.fare.findFirst({
 //     where: { isActive: true },
 //     orderBy: { createdAt: "desc" },
 //   });
 //   if (!activeFare) throw new Error("Active fare not found");
 
-//   // প্রতিটি estimate-এ latest fare info merge
-//   const result = estimates.map((e) => ({
-//     ...e,
-//     baseFare: activeFare.baseFare,
-//     costPerKm: activeFare.costPerKm,
-//     costPerMin: activeFare.costPerMin,
-//     minimumFare: activeFare.minimumFare,
-//     waitingPerMin: activeFare.waitingPerMin,
-//   }));
+//   // প্রতিটি estimate এ নতুন fare config দিয়ে হিসাব করো
+//   const result = estimates.map((e) => {
+//     // calculateFare expects a token and payload, but here we just want to merge fare config
+//     // So, instead, just merge the fare config without calling calculateFare
+//     const distance = e.distance ?? 0; // null হলে 0 ধরে নিচ্ছি
+//     const calculatedFare = (activeFare.baseFare ?? 0) + distance * (activeFare.costPerKm ?? 0);
+//     return {
+//       ...e,
+//       baseFare: activeFare.baseFare ?? 0,
+//       costPerKm: activeFare.costPerKm ?? 0,
+//       costPerMin: activeFare.costPerMin ?? 0,
+//       waitingPerMin: activeFare.waitingPerMin ?? 0,
+//       // totalFare: Math.round(
+//       //   ((activeFare.baseFare ?? 0) + e.distance * (activeFare.costPerKm ?? 0)) < (activeFare.minimumFare ?? 0)
+//       //     ? (activeFare.minimumFare ?? 0)
+//       //     : (activeFare.baseFare ?? 0) + e.distance * (activeFare.costPerKm ?? 0)
+//       // ),
+//       totalFare: Math.round(calculatedFare < (activeFare.minimumFare ?? 0)
+//       ? (activeFare.minimumFare ?? 0)
+//       : calculatedFare
+//     ),
+//     };
+//   });
 
 //   return result;
 // };
-
-// const getListFromDb = async () => {
-
-//     const result = await prisma.estimateFare.findMany();
-//     return result;
-// };
-
-// const getByIdFromDb = async (id: string) => {
-
-//     const result = await prisma.estimateFare.findUnique({ where: { id } });
-//     if (!result) {
-//       throw new Error('EstimateFare not found');
-//     }
-//     return result;
-//   };
-
-// const updateIntoDb = async (id: string, data: any) => {
-//   const transaction = await prisma.$transaction(async (prisma) => {
-//     const result = await prisma.estimateFare.update({
-//       where: { id },
-//       data,
-//     });
-//     return result;
-//   });
-
-//   return transaction;
-// };
-
-// const deleteItemFromDb = async (id: string) => {
-//   const transaction = await prisma.$transaction(async (prisma) => {
-//     const deletedItem = await prisma.estimateFare.delete({
-//       where: { id },
-//     });
-
-//     // Add any additional logic if necessary, e.g., cascading deletes
-//     return deletedItem;
-//   });
-
-//   return transaction;
-// };
-// ;
-
-// estimateFare.service.ts
 
 const getMyEstimateFareList = async (userId: string) => {
   // Rider এর estimates নাও
@@ -154,35 +143,40 @@ const getMyEstimateFareList = async (userId: string) => {
     where: { isActive: true },
     orderBy: { createdAt: "desc" },
   });
+
   if (!activeFare) throw new Error("Active fare not found");
 
-  // প্রতিটি estimate এ নতুন fare config দিয়ে হিসাব করো
   const result = estimates.map((e) => {
-    // calculateFare expects a token and payload, but here we just want to merge fare config
-    // So, instead, just merge the fare config without calling calculateFare
-    const distance = e.distance ?? 0; // null হলে 0 ধরে নিচ্ছি
-    const calculatedFare = (activeFare.baseFare ?? 0) + distance * (activeFare.costPerKm ?? 0);
+    const distance = e.distance ?? 0;
+    const rideDuration = e.duration ?? 0; // ride duration in minutes
+
+    // Extra distance fare (after 5 km)
+    const extraDistanceFare = distance > 5 ? (distance - 5) * (activeFare.costPerKm ?? 0) : 0;
+
+    // Extra ride time fare (after 5 km)
+    const extraTimeFare = distance > 5 ? rideDuration * (activeFare.costPerMin ?? 0) : 0;
+
+    // Total fare = extra distance + extra time
+    let totalFare = extraDistanceFare + extraTimeFare;
+
+    // Minimum fare enforcement
+    if (totalFare < (activeFare.minimumFare ?? 0)) {
+      totalFare = activeFare.minimumFare ?? 0;
+    }
+
     return {
       ...e,
-      baseFare: activeFare.baseFare ?? 0,
       costPerKm: activeFare.costPerKm ?? 0,
       costPerMin: activeFare.costPerMin ?? 0,
-      waitingPerMin: activeFare.waitingPerMin ?? 0,
-      // totalFare: Math.round(
-      //   ((activeFare.baseFare ?? 0) + e.distance * (activeFare.costPerKm ?? 0)) < (activeFare.minimumFare ?? 0)
-      //     ? (activeFare.minimumFare ?? 0)
-      //     : (activeFare.baseFare ?? 0) + e.distance * (activeFare.costPerKm ?? 0)
-      // ),
-      totalFare: Math.round(calculatedFare < (activeFare.minimumFare ?? 0)
-      ? (activeFare.minimumFare ?? 0)
-      : calculatedFare
-    ),
+      minimumFare: activeFare.minimumFare ?? 0,
+      extraDistanceFare,
+      extraTimeFare,
+      totalFare: Math.round(totalFare),
     };
   });
 
   return result;
 };
-
 
 export const estimateFareService = {
   calculateFare,

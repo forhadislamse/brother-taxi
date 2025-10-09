@@ -356,12 +356,13 @@ model EstimateFare {
   dropOffLat    Float
   dropOffLng    Float
   distance      Float?
+  duration      Float?
   totalFare     Float
-  baseFare      Float
+  // baseFare      Float
   costPerKm     Float
   costPerMin    Float
   minimumFare   Float
-  waitingPerMin Float
+  // waitingPerMin Float
   isActive      Boolean  @default(true)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
