@@ -64,6 +64,7 @@ const calculateFare = async (token: string, payload: any) => {
       dropOffLat: payload.dropOffLat,
       dropOffLng: payload.dropOffLng,
       distance,
+      duration: rideDuration,
       totalFare,
       // baseFare: activeFare.baseFare,
       costPerKm: activeFare.costPerKm,

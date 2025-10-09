@@ -28,10 +28,67 @@ import {
   IStartJourneyReq,
 } from "./carTransport.interface";
 
+// export async function calculateFareFromConfig(
+//   distance: number,
+//   rideTime: number,
+//   // waitingTime: number
+// ) {
+//   const activeFare = await prisma.fare.findFirst({
+//     where: { isActive: true },
+//     orderBy: { createdAt: "desc" },
+//   });
+//   if (!activeFare) throw new Error("Active Fare not found");
+
+//   const { baseFare, costPerKm, costPerMin, minimumFare, waitingPerMin } =
+//     activeFare;
+//   // console.log({ object: activeFare, distance, rideTime, waitingTime});
+//   console.log({ object: activeFare, distance, rideTime});
+
+//   if (baseFare == null) {
+//     throw new Error("baseFare value is missing in active fare configuration");
+//   }
+//   if (waitingPerMin == null) {
+//     throw new Error(
+//       "waitingPerMin value is missing in active fare configuration"
+//     );
+//   }
+//   if (costPerMin == null) {
+//     throw new Error("costPerMin value is missing in active fare configuration");
+//   }
+
+//   // 1. Distance fare
+//   const distanceFare = costPerKm * distance;
+
+//   // 2. Time fare
+//   const timeFare = costPerMin * rideTime;
+
+//   // 3. Waiting fare (first 3 min free)
+//   // const waitingFare = waitingTime >= 4 ? (waitingTime - 4) * waitingPerMin : 0;
+
+//   // 4. Total
+//   let totalFare = baseFare + distanceFare + timeFare + waitingFare;
+
+//   // 5. Minimum fare check
+//   if (minimumFare == null) {
+//     throw new Error(
+//       "minimumFare value is missing in active fare configuration"
+//     );
+//   }
+//   if (totalFare < minimumFare) {
+//     totalFare = minimumFare;
+//   }
+
+//   return {
+//     distance: distance.toFixed(2),
+//     rideTime,
+//     waitingTime,
+//     totalFare: Math.round(totalFare),
+//   };
+// }
+
 export async function calculateFareFromConfig(
   distance: number,
-  rideTime: number,
-  waitingTime: number
+  rideTime: number
 ) {
   const activeFare = await prisma.fare.findFirst({
     where: { isActive: true },
@@ -39,51 +96,38 @@ export async function calculateFareFromConfig(
   });
   if (!activeFare) throw new Error("Active Fare not found");
 
-  const { baseFare, costPerKm, costPerMin, minimumFare, waitingPerMin } =
-    activeFare;
-  console.log({ object: activeFare, distance, rideTime, waitingTime });
+  const { costPerKm, costPerMin, minimumFare } = activeFare;
 
-  if (baseFare == null) {
-    throw new Error("baseFare value is missing in active fare configuration");
-  }
-  if (waitingPerMin == null) {
-    throw new Error(
-      "waitingPerMin value is missing in active fare configuration"
-    );
+  if (costPerKm == null) {
+    throw new Error("costPerKm value is missing in active fare configuration");
   }
   if (costPerMin == null) {
     throw new Error("costPerMin value is missing in active fare configuration");
   }
-
-  // 1. Distance fare
-  const distanceFare = costPerKm * distance;
-
-  // 2. Time fare
-  const timeFare = costPerMin * rideTime;
-
-  // 3. Waiting fare (first 3 min free)
-  const waitingFare = waitingTime >= 4 ? (waitingTime - 4) * waitingPerMin : 0;
-
-  // 4. Total
-  let totalFare = baseFare + distanceFare + timeFare + waitingFare;
-
-  // 5. Minimum fare check
   if (minimumFare == null) {
-    throw new Error(
-      "minimumFare value is missing in active fare configuration"
-    );
+    throw new Error("minimumFare value is missing in active fare configuration");
   }
-  if (totalFare < minimumFare) {
-    totalFare = minimumFare;
-  }
+
+  // 1. Extra distance fare (after first 5 km)
+  const extraDistanceFare = distance > 5 ? (distance - 5) * costPerKm : 0;
+
+  // 2. Extra time fare (after first 5 km)
+  const extraTime = distance > 5 ? rideTime : 0;
+  const extraTimeFare = extraTime * costPerMin;
+
+  // 3. Total fare = minimum fare + extra distance + extra time
+  let totalFare = minimumFare + extraDistanceFare + extraTimeFare;
 
   return {
     distance: distance.toFixed(2),
     rideTime,
-    waitingTime,
+    extraDistanceFare,
+    extraTimeFare,
+    minimumFare,
     totalFare: Math.round(totalFare),
   };
 }
+
 
 // const planCarTransport = async (payload: any) => {
 //   const {pickup,dropOff, pickupLat, pickupLng, dropOffLat, dropOffLng } = payload;
@@ -188,7 +232,7 @@ const planCarTransport = async (userId: string, payload: any) => {
   const { totalFare } = await calculateFareFromConfig(
     distance,
     rideTime,
-    waitingTime
+    // waitingTime
   );
 
   // Nearby drivers (dynamic, not saved in DB)

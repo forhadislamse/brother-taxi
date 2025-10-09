@@ -6,7 +6,7 @@ import { JwtPayload } from 'jsonwebtoken';
 
 const estimateFare = catchAsync(async (req, res) => {
   const token = req.headers.authorization;
-  const { pickup,dropOff,pickupLat, pickupLng, dropOffLat, dropOffLng } = req.body;
+  const { pickup,dropOff,pickupLat, pickupLng, dropOffLat, dropOffLng ,duration} = req.body;
 
   if (!pickupLat || !pickupLng || !dropOffLat || !dropOffLng ||!pickup||!dropOff) {
     return sendResponse(res, {
@@ -23,6 +23,7 @@ const estimateFare = catchAsync(async (req, res) => {
     pickupLng,
     dropOffLat,
     dropOffLng,
+    duration: duration ?? 0,
   });
 
   sendResponse(res, {
