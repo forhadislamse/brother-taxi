@@ -36,11 +36,11 @@ const createFare = async (fareData: { baseFare: number; costPerKm: number;costPe
   // Create new active fare
   const fare = await prisma.fare.create({
     data: {
-      baseFare: fareData.baseFare,
+      // baseFare: fareData.baseFare,
       costPerKm: fareData.costPerKm,
       costPerMin:fareData.costPerMin,
       minimumFare:fareData.minimumFare,
-      waitingPerMin:fareData.waitingPerMin,
+      // waitingPerMin:fareData.waitingPerMin,
       isActive: true,
       // carTransport: {
       //   // Replace 'connect' with the appropriate way to link or create CarTransport

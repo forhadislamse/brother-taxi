@@ -27,61 +27,6 @@ export type ICarTransportFilters = {
   paymentStatus?: string;
 };
 
-// export type IDriverJobFilters = {
-//   status?: TransportStatus;
-//   startDate?: string;
-//   endDate?: string;
-//   page?: number;
-//   limit?: number;
-//   sortBy?: string;
-//   sortOrder?: 'asc' | 'desc';
-// };
-
-// export type IDriverIncomeResponse = {
-//   totalIncome: number;
-//   totalDistance:number;
-//   totalDuration:number;
-//   transactions: {
-//     meta: {
-//       page: number;
-//       limit: number;
-//       total: number;
-//     };
-//     data: any[];
-//   };
-// };
-
-// export type IAssignDriverReq = {
-//   carTransportId: string;
-//   driverId: string;
-// };
-
-// export type IDriverResponseReq = {
-//   carTransportId: string;
-//   response: 'ACCEPTED' | 'DECLINED';
-// };
-
-// export type IConfirmArrivalReq = {
-//   carTransportId: string;
-// };
-
-// export type IStartJourneyReq = {
-//   carTransportId: string;
-// };
-
-// export type ICompleteJourneyReq = {
-//   carTransportId: string;
-// };
-
-// export type IDriverAssignedRequestsResponse = {
-//   meta: {
-//     page: number;
-//     limit: number;
-//     total: number;
-//     totalAmountSum: number;
-//   };
-//   data: any[];
-// }; 
 
 // 🔹 Driver filters for income/history
 export type IDriverJobFilters = {

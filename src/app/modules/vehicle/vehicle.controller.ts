@@ -45,7 +45,7 @@ const createVehicle = catchAsync(async (req, res) => {
     year,
     color,
     licensePlateNumber,
-    bh,
+    // bh,
     // refferalCode,
   } = updateData;
 
@@ -59,7 +59,7 @@ const createVehicle = catchAsync(async (req, res) => {
     year,
     color,
     licensePlateNumber,
-    bh,
+    // bh,
     // refferalCode,
   };
 

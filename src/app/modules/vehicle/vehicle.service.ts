@@ -321,7 +321,7 @@ const getUserVehicles = async (
             { model: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
             { color: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
             { licensePlateNumber: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
-            { bh: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
+            // { bh: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
             // { refferalCode: { contains: searchTerm, mode: Prisma.QueryMode.insensitive } },
           ],
         }
