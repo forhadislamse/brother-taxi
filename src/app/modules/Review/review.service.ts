@@ -3,54 +3,10 @@ import config from "../../../config";
 import ApiError from "../../../errors/ApiErrors";
 import { jwtHelpers } from "../../../helpars/jwtHelpers";
 import prisma from "../../../shared/prisma";
-import { TransportStatus } from "@prisma/client";
+import { NotificationType, TransportStatus } from "@prisma/client";
+import { NotificationService } from "../Notification/Notification.service";
 
-// const createReviewService = async (studentId: string, payload: {
-//   rating: number;
-//   comment: string;
-//   tutorId: string;
-// }) => {
-//   const { rating, comment, tutorId } = payload;
-//   if (!rating || !comment || !tutorId) {
-//     throw new ApiError(httpStatus.BAD_REQUEST,"Rating, comment, and tutor ID are required");
-//   }
 
-//   if(rating < 1 || rating > 5) {
-//     throw new ApiError(httpStatus.BAD_REQUEST,"Rating must be between 1 and 5");
-//   }
-
-//   const review = await prisma.review.create({
-//     data: {
-//       rating,
-//       comment,
-//       studentId,
-//       tutorId,
-//     },
-//   });
-
-//    // Step 2: Get all reviews for this tutor
-//   const allReviews = await prisma.review.findMany({
-//     where: { tutorId },
-//     select: { rating: true },
-//   });
-
-//   // Step 3: Calculate average rating
-//   const totalRating = allReviews.reduce((sum, r) => sum + r.rating, 0);
-//   const avgRating = totalRating / allReviews.length;
-
-//   await prisma.user.update({
-//     where: { id: tutorId },
-//     data: { rating: avgRating },
-//   });
-
-//   if (!review) {
-//     throw new ApiError(500,"Failed to create review");
-//   }
-
-//   return review;
-// };
-
-//  Create Review (Rider or Driver)
 const createReview = async (
   userToken: string,
   payload: { carTransportId: string; rating: number; comment?: string }
@@ -93,45 +49,100 @@ const createReview = async (
   });
   if (existing) throw new ApiError(httpStatus.CONFLICT, "Already reviewed");
 
-  const review = await prisma.review.create({
-    data: {
-      carTransportId,
-      reviewerId,
-      revieweeId,
-      rating,
-      comment,
-      isFlagged: rating <= 2, // শুধু rider হলে admin দেখবে
-    },
-    include: {
-      reviewer: { select: { id: true, fullName: true } },
-      reviewee: { select: { id: true, fullName: true } },
-    },
-  });
+//   const review = await prisma.review.create({
+//     data: {
+//       carTransportId,
+//       reviewerId,
+//       revieweeId,
+//       rating,
+//       comment,
+//       isFlagged: rating <= 2, // শুধু rider হলে admin দেখবে
+//     },
+//     include: {
+//       reviewer: { select: { id: true, fullName: true } },
+//       reviewee: { select: { id: true, fullName: true } },
+//     },
+//   });
+// await updateUserRatingStats(revieweeId);
 
-  // Update average
-//   console.log("Updating stats for user:", revieweeId);
+const review = await prisma.review.create({
+  data: {
+    carTransportId,
+    reviewerId,
+    revieweeId,
+    rating,
+    comment,
+    isFlagged: rating <= 2, // শুধু rider → driver হলে admin দেখবে
+  },
+  include: {
+    reviewer: { select: { id: true, fullName: true, role: true } },
+    reviewee: { select: { id: true, fullName: true, role: true } },
+  },
+});
+
+// Update average rating
 await updateUserRatingStats(revieweeId);
-// console.log("Updated stats successfully");
+
+// Check low rating case
+if (review.isFlagged) {
+  // যদি reviewer হয় RIDER এবং reviewee হয় DRIVER
+  if (review.reviewer.role === "RIDER" && review.reviewee.role === "DRIVER") {
+    const admin = await prisma.user.findFirst({
+      where: { role: "ADMIN", fcmToken: { not: null } },
+      select: { id: true, fcmToken: true, fullName: true },
+    });
+
+    if (admin?.fcmToken) {
+      const notificationPayload = {
+        title: "New Driver Complaint",
+        body: `${review.reviewer.fullName} gave ${review.rating}-star to ${review.reviewee.fullName}.`,
+        type: NotificationType.REVIEW_ALERT,
+        data: JSON.stringify({ reviewId: review.id }), // ✅ fixed
+        // data: { reviewId: review.id },
+        targetId: review.revieweeId,
+        slug: "review-alert",
+      };
+
+      //  Send push notification to Admin
+      await NotificationService.sendNotification(
+        admin.fcmToken,
+        notificationPayload,
+        reviewerId
+      );
+
+      // 🗂️ Save in DB for history
+      await prisma.notification.create({
+        data: {
+          title: notificationPayload.title,
+          body: notificationPayload.body,
+          type: notificationPayload.type,
+          userId: admin.id, // admin notification পাচ্ছে
+          targetId: review.id,
+          createdAt: new Date(),
+        },
+      });
+    }
+  } else {
+    // driver → rider দিলে শুধু DB তে save হবে, admin notification যাবে না
+    await prisma.notification.create({
+      data: {
+        title: "Low rating received",
+        body: `${review.reviewer.fullName} gave ${review.rating}-star to ${review.reviewee.fullName}.`,
+        type: NotificationType.REVIEW_ALERT,
+        userId: review.revieweeId,
+        targetId: review.id,
+        createdAt: new Date(),
+      },
+    });
+  }
+}
 
   return review;
 };
 
-// Average Rating calculation
-// const updateUserRatingStats = async (userId: string) => {
-//   const reviews = await prisma.review.findMany({
-//     where: { revieweeId: userId },
-//   });
 
-//   const avg =
-//     reviews.length > 0
-//       ? reviews.reduce((a, b) => a + b.rating, 0) / reviews.length
-//       : 0;
 
-//   await prisma.user.update({
-//     where: { id: userId },
-//     data: { averageRating: avg },
-//   });
-// };
+
 const updateUserRatingStats = async (userId: string) => {
   const stats = await prisma.review.aggregate({
     where: { revieweeId: userId },
@@ -174,7 +185,7 @@ const getFlaggedReviews = async () => {
       },
     },
     include: {
-      reviewer: { select: { id: true, fullName: true, role: true } },
+      reviewer: { select: { id: true, fullName: true, role: true,profileImage:true } },
       reviewee: { select: { id: true, fullName: true, role: true } },
       carTransport: { select: { id: true } },
     },

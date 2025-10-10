@@ -78,6 +78,7 @@ enum NotificationType {
   VEHICLE_STATUS
   GENERAL
   PAYMENT
+  REVIEW_ALERT
 }
 
 
@@ -309,7 +310,7 @@ model Payment {
   platformFee                 Float
   driverFee                   Float?
   platformFeeType             FeeType       @default(PERCENTAGE)
-  paymentMethod               PaymentMethod @default(CARD)
+  paymentMethod               PaymentMethod @default(CASH)
   paymentStatus               PaymentStatus @default(PENDING)
   stripePaymentIntentId       String?
   stripePlatformFeeTransferId String?
