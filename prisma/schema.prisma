@@ -185,8 +185,9 @@ model CarTransport {
   totalAmount     Float?        @default(0)
   distance        Float
   platformFee     Float?        @default(0)
+  driverFee       Float?        @default(0)
   platformFeeType String?       @default("")
-  paymentMethod   String?       @default("CARD")
+  paymentMethod   String?       @default("CASH")
   paymentStatus   PaymentStatus @default(PENDING)
   isPayment       Boolean       @default(false)
 

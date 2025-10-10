@@ -63,6 +63,13 @@ const handleCashPayment = async (
       );
     }
 
+    // =========================
+    // 💰 Calculate Platform Fee & Driver Fee
+    // =========================
+    const totalAmount = carTransport.totalAmount || 0;
+    const platformFee = Math.round((totalAmount * 12.5) / 100); // 12.5%
+    const driverFee = totalAmount - platformFee;
+
     const now = new Date();
     const expiryDate = new Date(Date.now() + 60 * 1000);
 
@@ -75,11 +82,14 @@ const handleCashPayment = async (
           senderId: carTransport.userId,
           receiverId: carTransport.assignedDriver,
           amount: carTransport.totalAmount || 0,
-          driverFee:
-            (carTransport.totalAmount || 0) - (carTransport.platformFee || 0),
-          platformFee: carTransport.platformFee || 0,
-          platformFeeType:
-            (carTransport.platformFeeType as FeeType) || FeeType.PERCENTAGE,
+          // driverFee:
+          //   (carTransport.totalAmount || 0) - (carTransport.platformFee || 0),
+          // platformFee: carTransport.platformFee || 0,
+          // platformFeeType:
+          //   (carTransport.platformFeeType as FeeType) || FeeType.PERCENTAGE,
+          platformFee,
+          driverFee,
+          platformFeeType:FeeType.PERCENTAGE,
           paymentMethod: PaymentMethod.CASH,
           paymentStatus: PaymentStatus.COMPLETED,
         },
@@ -91,6 +101,8 @@ const handleCashPayment = async (
           paymentStatus: PaymentStatus.COMPLETED,
           isPayment: true,
           paymentMethod: PaymentMethod.CASH,
+          platformFee,
+        // driverFee,
         },
       });
 
@@ -480,10 +492,14 @@ const getAllTransactions = async (
     },
     _sum: {
       amount: true,
+      driverFee: true,
+      platformFee: true,
     },
   });
 
   const allAmount = aggregateResult._sum.amount || 0;
+  const allDriverFee = aggregateResult._sum.driverFee || 0;
+  const allPlatformFee = aggregateResult._sum.platformFee || 0;
 
   // Get total count for pagination
   const total = await prisma.payment.count({ where });
@@ -503,6 +519,10 @@ const getAllTransactions = async (
       limit,
       total,
       allAmount,
+      allDriverFee,
+      allPlatformFee,
+
+      
       totalPages: Math.ceil(total / limit),
     },
     data: transactions,
