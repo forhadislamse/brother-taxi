@@ -1,5 +1,6 @@
 import { Server } from "http";
 import config from "./config";
+import "./shared/cronForLicense"
 
 import app from "./app";
 import { setupWebSocket } from "./shared/websocket";

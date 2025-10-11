@@ -79,6 +79,7 @@ enum NotificationType {
   GENERAL
   PAYMENT
   REVIEW_ALERT
+  DOCUMENT_REMINDER
 }
 
 
@@ -132,6 +133,7 @@ model User {
   taxiManufacturer    String?
   bhNumber            String?
   adminApprovedStatus AdminApprovedStatus @default(PENDING)
+  adminApprovedAt        DateTime? // নতুন ফিল্ড
   // isApproved       Boolean @default(false)
 
   rating        Float? @default(0)
@@ -140,6 +142,8 @@ model User {
   totalTrips    Int?   @default(0)
   averageRating Float  @default(0) // Average rating score
   reviewCount   Int    @default(0)
+  licenseExpiryDate DateTime? @default(now())
+
 
   createdAt             DateTime       @default(now())
   updatedAt             DateTime       @updatedAt

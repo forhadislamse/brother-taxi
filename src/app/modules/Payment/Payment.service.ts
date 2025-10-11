@@ -511,6 +511,30 @@ const getAllTransactions = async (
     orderBy: {
       [sortBy]: sortOrder,
     },
+    include: {
+      sender: {
+        select: {
+          fullName: true,
+          profileImage: true,
+        },
+      },
+
+      receiver: {
+        select: {
+          fullName: true,
+          profileImage: true,
+          
+        },
+      },
+
+      carTransport:{
+        select:{
+          pickupLocation:true,
+          dropOffLocation:true,
+          distance:true,
+      }}
+      
+    },
   });
 
   return {

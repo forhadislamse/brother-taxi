@@ -11,6 +11,7 @@ import { Secret } from "jsonwebtoken";
 import { generateOtp, generateReferralCode } from "../../../shared/getTransactionId";
 import { sendMessage } from "../../../shared/sendMessage";
 import { get, omit } from "lodash";
+import dayjs from "dayjs";
 
 
 
@@ -412,6 +413,50 @@ const adminDashboardUserLength = async () => {
 //   return userWithoutSensitive;
 // };
 
+// const updateDriverLicense = async (
+//   userId: string,
+//   licenseFrontSide?: string,
+//   licenseBackSide?: string
+// ) => {
+//   const user = await prisma.user.findUnique({ where: { id: userId } });
+//   if (!user) throw new ApiError(404, "User not found");
+
+//   // if approved driver change license , then status will pending again and have to re-approved by admin
+//   let newStatus = user.adminApprovedStatus;
+//   // let licenseExpiryDate = user.licenseExpiryDate;
+
+//   if (user.adminApprovedStatus === "APPROVED" && (licenseFrontSide || licenseBackSide)) {
+//     newStatus = "PENDING";
+//   }
+
+//   // যদি নতুন লাইসেন্স আপলোড হয়, তাহলে নতুন এক্সপায়ারি ডেট সেট করো (আজ থেকে ১ বছর পর)
+//   // if (licenseFrontSide || licenseBackSide) {
+//   //   licenseExpiryDate = new Date();
+//   //   licenseExpiryDate.setFullYear(licenseExpiryDate.getFullYear() + 1);
+//   // }
+
+//   const updatedUser = await prisma.user.update({
+//     where: { id: userId },
+//     data: {
+//       licenseFrontSide: licenseFrontSide || user.licenseFrontSide,
+//       licenseBackSide: licenseBackSide || user.licenseBackSide,
+//       adminApprovedStatus: newStatus,
+//       // licenseExpiryDate,
+//       updatedAt: new Date(),
+//     },
+//   });
+
+//   const userWithoutSensitive = omit(updatedUser, [
+//     "password",
+//     "otp",
+//     "otpExpiresAt",
+//     "fcmToken",
+//     "stripeAccountId",
+//   ]);
+
+//   return userWithoutSensitive;
+// };
+
 const updateDriverLicense = async (
   userId: string,
   licenseFrontSide?: string,
@@ -420,10 +465,16 @@ const updateDriverLicense = async (
   const user = await prisma.user.findUnique({ where: { id: userId } });
   if (!user) throw new ApiError(404, "User not found");
 
-  // if approved driver change license , then status will pending again and have to re-approved by admin
+  // যদি Approved driver নতুন লাইসেন্স দেয়
   let newStatus = user.adminApprovedStatus;
-  if (user.adminApprovedStatus === "APPROVED" && (licenseFrontSide || licenseBackSide)) {
+  let newExpiryDate = user.licenseExpiryDate;
+
+  if (
+    user.adminApprovedStatus === "APPROVED" &&
+    (licenseFrontSide || licenseBackSide)
+  ) {
     newStatus = "PENDING";
+    newExpiryDate = dayjs().add(1, "year").toDate(); // নতুন ১ বছরের জন্য নবায়ন
   }
 
   const updatedUser = await prisma.user.update({
@@ -432,6 +483,7 @@ const updateDriverLicense = async (
       licenseFrontSide: licenseFrontSide || user.licenseFrontSide,
       licenseBackSide: licenseBackSide || user.licenseBackSide,
       adminApprovedStatus: newStatus,
+      licenseExpiryDate: newExpiryDate,
       updatedAt: new Date(),
     },
   });
@@ -446,8 +498,6 @@ const updateDriverLicense = async (
 
   return userWithoutSensitive;
 };
-
-
 
 const updateUserProfile = async (
   userId: string,
@@ -496,145 +546,6 @@ const updateUserProfile = async (
   return userWithoutSensitive;
 };
 
-// const updateUserProfile = async (
-//   userId: string,
-//   updateData: Partial<IUser>,
-//   files?: { [fieldname: string]: Express.Multer.File[] }
-// ) => {
-//   const user = await prisma.user.findUnique({ where: { id: userId } });
-//   if (!user) throw new ApiError(404, "User not found");
-
-//   // Prepare updated fields
-//   const updatedFields: any = { ...updateData };
-
-//   // Handle profile image upload
-//   if (files?.profileImage?.[0]) {
-//     const uploaded = await fileUploader.uploadToDigitalOcean(files.profileImage[0]);
-//     updatedFields.profileImage = uploaded.Location;
-//   }
-
-//   // Handle license front side
-//   if (files?.licenseFrontSide?.[0]) {
-//     const uploaded = await fileUploader.uploadToDigitalOcean(files.licenseFrontSide[0]);
-//     updatedFields.licenseFrontSide = uploaded.Location;
-//   }
-
-//   // Handle license back side
-//   if (files?.licenseBackSide?.[0]) {
-//     const uploaded = await fileUploader.uploadToDigitalOcean(files.licenseBackSide[0]);
-//     updatedFields.licenseBackSide = uploaded.Location;
-//   }
-
-//   // Validate gender if provided
-//   if (updateData.gender && updateData.gender.trim() !== "") {
-//     if (!Object.values(Gender).includes(updateData.gender as Gender)) {
-//       throw new ApiError(400, "Invalid gender value");
-//     }
-//   }
-
-//   // Delete sensitive fields
-//   delete updatedFields.password;
-//   delete updatedFields.otp;
-//   delete updatedFields.otpExpiresAt;
-
-//   const updatedUser = await prisma.user.update({
-//     where: { id: userId },
-//     data: { ...updatedFields, updatedAt: new Date() },
-//   });
-
-//   const userWithoutSensitive = omit(updatedUser, [
-//     "password",
-//     "otp",
-//     "otpExpiresAt",
-//     "fcmToken",
-//     "stripeAccountId",
-//   ]);
-
-//   return userWithoutSensitive;
-// };
-
-
-// const driverOnboarding = async (
-//   userId: string,
-//   profileData: Partial<IUser>,
-//   vehicleData: any,
-//   files: { [fieldname: string]: Express.Multer.File[] }
-// ) => {
-//   const user = await prisma.user.findUnique({ where: { id: userId } });
-//   if (!user) throw new ApiError(httpStatus.NOT_FOUND, "User not found");
-
-//   // Check role manually
-//   if (user.role !== "DRIVER") {
-//     throw new ApiError(httpStatus.FORBIDDEN, "Only drivers can complete onboarding");
-//   }
-
-//   // Handle file uploads
-//   let profileImage: string | undefined;
-//   let licenseFrontSide: string | undefined;
-//   let licenseBackSide: string | undefined;
-//   let vehicleImage: string | undefined;
-
-
-//   if (files?.profileImage?.[0]) {
-//     const uploaded = await fileUploader.uploadToDigitalOcean(files.profileImage[0]);
-//     profileImage = uploaded.Location;
-//   }
-//   if (files?.licenseFrontSide?.[0]) {
-//     const uploaded = await fileUploader.uploadToDigitalOcean(files.licenseFrontSide[0]);
-//     licenseFrontSide = uploaded.Location;
-//   }
-//   if (files?.licenseBackSide?.[0]) {
-//     const uploaded = await fileUploader.uploadToDigitalOcean(files.licenseBackSide[0]);
-//     licenseBackSide = uploaded.Location;
-//   }
-//   if (files?.vehicleImage?.[0]) {
-//     const uploaded = await fileUploader.uploadToDigitalOcean(files.vehicleImage[0]);
-//     vehicleImage = uploaded.Location;
-//   }
-
-  
-//  let genderValue: Gender | undefined = undefined;
-
-// if (profileData.gender && profileData.gender.trim() !== "") {
-//   if (Object.values(Gender).includes(profileData.gender as Gender)) {
-//     genderValue = profileData.gender as Gender;
-//   } else {
-//     throw new ApiError(400, "Invalid gender value");
-//   }
-// }
-//   // Transaction: Profile + License + Vehicle → সব একসাথে
-//   const result = await prisma.$transaction(async (tx) => {
-//     // 1. Update User Profile + License
-//     const updatedUser = await tx.user.update({
-//       where: { id: userId },
-//       data: {
-//         ...profileData,
-//         gender:genderValue,
-//         profileImage: profileImage || user.profileImage,
-//         licenseFrontSide: licenseFrontSide || user.licenseFrontSide,
-//         licenseBackSide: licenseBackSide || user.licenseBackSide,
-//         updatedAt: new Date(),
-//       },
-//     });
-
-//     // 2. Create Vehicle
-//     const createdVehicle = await tx.vehicle.create({
-//       data: {
-//         ...vehicleData,
-//         image: vehicleImage,
-//         userId: userId,
-//       },
-//     });
-
-//     // remove sensitive data before returning
-//     const userWithoutSensitive = omit(updatedUser, ["password", "fcmToken"]);
-
-//     return { user: userWithoutSensitive, vehicle: createdVehicle };
-//     // return { updatedUser, createdVehicle };
-//   });
-
-//   return result;
-// };
 
 const driverOnboarding = async (
   userId: string,
@@ -826,6 +737,42 @@ const getDriversPendingApproval = async (userToken: string) => {
 };
 
 
+// const updateDriverApprovalStatus = async (
+//   userToken: string,
+//   userId: string,
+//   status: "APPROVED" | "REJECTED"
+// ) => {
+//   // Verify admin token
+//   const decoded = jwtHelpers.verifyToken(userToken, process.env.JWT_SECRET!);
+
+//   const currentUser = await prisma.user.findUnique({ where: { id: decoded.id } });
+//   if (!currentUser || currentUser.role !== "ADMIN") {
+//     throw new ApiError(httpStatus.FORBIDDEN, "You are not authorized");
+//   }
+
+//   // const driver = await prisma.user.findUnique({ where: { id: userId } });
+//   console.log("UserID from body:", userId);
+// const driver = await prisma.user.findUnique({ where: { id: userId.trim() } });
+// console.log(driver);
+//   if (!driver) throw new ApiError(httpStatus.NOT_FOUND, "Driver not found");
+//   if (driver.role !== "DRIVER") throw new ApiError(httpStatus.BAD_REQUEST, "User is not a driver");
+
+//   // Update status
+//   const updatedDriver = await prisma.user.update({
+//     where: { id: userId },
+//     data: { adminApprovedStatus: status },
+//   });
+
+//   // Remove sensitive info
+//   const { password, fcmToken, ...driverSafe } = updatedDriver;
+//   return driverSafe;
+// };
+
+
+
+
+// toggle user online status
+
 const updateDriverApprovalStatus = async (
   userToken: string,
   userId: string,
@@ -839,28 +786,32 @@ const updateDriverApprovalStatus = async (
     throw new ApiError(httpStatus.FORBIDDEN, "You are not authorized");
   }
 
-  // const driver = await prisma.user.findUnique({ where: { id: userId } });
-  console.log("UserID from body:", userId);
-const driver = await prisma.user.findUnique({ where: { id: userId.trim() } });
-console.log(driver);
+  const driver = await prisma.user.findUnique({ where: { id: userId.trim() } });
   if (!driver) throw new ApiError(httpStatus.NOT_FOUND, "Driver not found");
   if (driver.role !== "DRIVER") throw new ApiError(httpStatus.BAD_REQUEST, "User is not a driver");
 
-  // Update status
+  // Prepare update data
+  const updateData: any = {
+    adminApprovedStatus: status,
+  };
+
+  // যদি approve করা হয়, তাহলে এক বছর পর licenseExpiryDate set করবে
+  if (status === "APPROVED") {
+    updateData.adminApprovedAt = new Date();
+    updateData.licenseExpiryDate = dayjs().add(1, "year").toDate();
+  }
+
   const updatedDriver = await prisma.user.update({
     where: { id: userId },
-    data: { adminApprovedStatus: status },
+    data: updateData,
   });
 
   // Remove sensitive info
-  const { password, fcmToken, ...driverSafe } = updatedDriver;
+  const { password, fcmToken, otp, otpExpiresAt, ...driverSafe } = updatedDriver;
   return driverSafe;
 };
 
 
-
-
-// toggle user online status
 const toggleUserOnlineStatus = async (
   userToken: string,
   isUserOnline: boolean
