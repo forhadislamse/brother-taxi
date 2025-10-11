@@ -231,7 +231,7 @@ model CarTransport {
 
   // Relations
   ridePlan ridePlan? @relation(fields: [ridePlanId], references: [id])
-  user     User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  user     User?      @relation(fields: [userId], references: [id], onDelete: Cascade)
   vehicle  Vehicle   @relation(fields: [vehicleId], references: [id], onDelete: Cascade)
   driver   User?     @relation("Driver", fields: [assignedDriver], references: [id], onDelete: Cascade)
   sender   User?     @relation("Sender", fields: [userId], references: [id], onDelete: Cascade)

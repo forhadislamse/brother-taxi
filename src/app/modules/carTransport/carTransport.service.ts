@@ -662,14 +662,20 @@ const getCarTransportById = async (id: string): Promise<any | null> => {
     );
   }
 
-  // Only search near user location if coordinates exist
-  if (result.user.lat && result.user.lng) {
-    nearbyDriversFromUser = await findNearbyDrivers(
-      result.user.lat,
-      result.user.lng
-    );
-  }
+  // // Only search near user location if coordinates exist
+  // if (result.user.lat && result.user.lng) {
+  //   nearbyDriversFromUser = await findNearbyDrivers(
+  //     result.user.lat,
+  //     result.user.lng
+  //   );
+  // }
 
+  if (result.user?.lat && result.user?.lng) {
+  nearbyDriversFromUser = await findNearbyDrivers(
+    result.user.lat,
+    result.user.lng
+  );
+}
   // Combine and remove duplicates
   const allNearbyDrivers = [
     ...nearbyDriversFromPickup,
@@ -784,7 +790,7 @@ const getNewCarTransportsReq = async (
       }
 
       // Only search near user location if coordinates exist
-      if (transport.user.lat && transport.user.lng) {
+      if (transport.user?.lat && transport.user?.lng) {
         nearbyDriversFromUser = await findNearbyDrivers(
           transport.user.lat,
           transport.user.lng
