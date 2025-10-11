@@ -722,10 +722,15 @@ const getDriversPendingApproval = async (userToken: string) => {
     select: {
       id: true,
       fullName: true,
+      profileImage:true,
+      licenseFrontSide:true,
+      licenseBackSide:true,
+      address: true,
       phoneNumber: true,
       createdAt: true,
       role: true,
       adminApprovedStatus: true,
+
     },
   });
 
