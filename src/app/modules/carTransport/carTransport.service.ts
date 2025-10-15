@@ -633,6 +633,8 @@ const getCarTransportById = async (id: string): Promise<any | null> => {
                 fullName: true,
                 email: true,
                 referralCode:true,
+                lat:true,
+                lng:true,
                 phoneNumber: true,
                 profileImage: true,
                 location: true,
