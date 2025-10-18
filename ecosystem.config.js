@@ -1,7 +1,7 @@
 module.exports = {
     apps: [
         {
-            name: 'brenthilvitz_server',
+            name: 'brother-taxi',
             script: './dist/server.js',
             args: 'start',
             env: {
