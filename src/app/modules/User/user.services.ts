@@ -167,9 +167,11 @@ import dayjs from "dayjs";
 //   return user;
 // };
 
+
+
 const createUserIntoDb = async (payload: User) => {
   // check existing user
-  let existingUser = await prisma.user.findFirst({
+  const existingUser = await prisma.user.findFirst({
     where: { phoneNumber: payload.phoneNumber },
   });
 
@@ -245,6 +247,100 @@ const createUserIntoDb = async (payload: User) => {
   return {...user, isExist};
 };
 
+
+
+
+/* const createUserIntoDb = async (payload: User) => {
+  let user;
+  let isExist = false; // default
+
+  // 1️⃣ check existing user
+  const existingUser = await prisma.user.findFirst({
+    where: { phoneNumber: payload.phoneNumber },
+  });
+
+  // 2️⃣ if exists
+  if (existingUser) {
+    if (!existingUser.isPhoneNumberVerify) {
+      // unverified → update OTP, referralCode
+      const otp = generateOtp(4);
+      const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+      user = await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          otp,
+          otpExpiresAt: otpExpiry,
+          referralCode: existingUser.referralCode ?? generateReferralCode(),
+        },
+        select: {
+          id: true,
+          phoneNumber: true,
+          role: true,
+          otp: true,
+          referralCode: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      isExist = true;
+
+      // send OTP
+      try {
+        await sendMessage(
+          `Here is your OTP code: ${otp}. It will expire in 5 minutes.`,
+          payload.phoneNumber
+        );
+      } catch (error) {
+        console.error("❌ Failed to send OTP:", error);
+      }
+
+      return { ...user, isExist };
+    } else {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `User with this phone number ${payload.phoneNumber} already exists`
+      );
+    }
+  }
+
+  // 3️⃣ New user create
+  const otp = generateOtp(4);
+  const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+  user = await prisma.user.create({
+    data: {
+      phoneNumber: payload.phoneNumber,
+      role: payload.role,
+      otp,
+      otpExpiresAt: otpExpiry,
+      referralCode: generateReferralCode(),
+    },
+    select: {
+      id: true,
+      phoneNumber: true,
+      role: true,
+      otp: true,
+      referralCode: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  // send OTP
+  try {
+    await sendMessage(
+      `Here is your OTP code: ${otp}. It will expire in 5 minutes.`,
+      payload.phoneNumber
+    );
+  } catch (error) {
+    console.error("❌ Failed to send OTP:", error);
+  }
+
+  console.log("✅ User created with phone:", payload.phoneNumber);
+  return { ...user, isExist };
+}; */
 
 
 const getMyProfile = async (userToken: string) => {
