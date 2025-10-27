@@ -50,6 +50,42 @@ const getAllUser = catchAsync(async (req: Request, res: Response) => {
   });
 });
 
+const getUserId = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id; // user ID from auth middleware
+
+  if (!userId) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "User ID not found in token");
+  }
+
+  const result = await userService.getUserById(userId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "get User Id successfully",
+    data: result,
+  });
+});
+
+const deleteAccount = catchAsync(async (req: Request, res: Response) => {
+  const userId = req.user.id; // user ID from auth middleware
+
+  if (!userId) {
+    throw new ApiError(httpStatus.BAD_REQUEST, "User ID not found in token");
+  }
+
+  const result = await userService.deleteAccount(userId);
+
+  sendResponse(res, {
+    statusCode: httpStatus.OK,
+    success: true,
+    message: "Your account has been deleted successfully",
+    data: result,
+  });
+});
+
+
+
 
 
 const adminDashboardUserLength = catchAsync(async (req: Request, res: Response) => {
@@ -286,6 +322,8 @@ export const userController = {
   getDriversPendingApproval,
   toggleOnlineStatus,
   toggleNotificationOnOff,
+  getUserId,
+  deleteAccount
 
   // postDemoVideo
 };

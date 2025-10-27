@@ -59,47 +59,79 @@ import axios from "axios";
   return { message: "OTP resent successfully", otp: otp };
 };
 
-// const resendOtp = async (phoneNumber: string) => {
-//   // Check if the user exists
-//   const user = await prisma.user.findUnique({
-//     where: { phoneNumber: phoneNumber },
-//   });
 
-//   if (!user) {
-//     throw new ApiError(httpStatus.NOT_FOUND, "This user is not found!");
-//   }
+/* const resendOtp = async (phoneNumber: string) => {
+  // Check if the user exists
+  const user = await prisma.user.findUnique({
+    where: { phoneNumber: phoneNumber },
+  });
 
-//   const otp = generateOtp(4);
-//   // const otp = 1234;
-//   const expirationOtp = new Date(Date.now() + 15 * 60 * 1000);
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, "This user is not found!");
+  }
 
-//   try {
-//     //     if (payload.phone.startsWith("+")) {
-//     //   throw new ApiError(
-//     //     httpStatus.BAD_REQUEST,
-//     //     "Phone number must be in E.164 format with country code."
-//     //   );
-//     // }
+  const otp = generateOtp(4);
+  // const otp = 1234;
+  const expirationOtp = new Date(Date.now() + 15 * 60 * 1000);
 
-//     const messageBody = `Here is your new OTP code: ${otp}. It will expire in 5 minutes.`;
+  try {
+    //     if (payload.phone.startsWith("+")) {
+    //   throw new ApiError(
+    //     httpStatus.BAD_REQUEST,
+    //     "Phone number must be in E.164 format with country code."
+    //   );
+    // }
 
-//     await sendMessage(messageBody, user.phoneNumber);
-//   } catch (error) {
-//     console.error(`Failed to send OTP phone:`, error);
-//   }
+    const messageBody = `Here is your new OTP code: ${otp}. It will expire in 5 minutes.`;
 
-//   // Update the user's profile with the new OTP and expiration
-//   const updatedUser = await prisma.user.update({
-//     where: { id: user.id },
-//     data: {
-//       otp: otp,
-//       otpExpiresAt: expirationOtp,
-//     },
-//   });
+    await sendMessage(messageBody, user.phoneNumber);
+  } catch (error) {
+    console.error(`Failed to send OTP phone:`, error);
+  }
 
-//   return { message: "OTP resent successfully", otp: otp };
-// };
+  // Update the user's profile with the new OTP and expiration
+  const updatedUser = await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      otp: otp,
+      otpExpiresAt: expirationOtp,
+    },
+  });
 
+  return { message: "OTP resent successfully", otp: otp };
+}; */
+
+/* const resendOtp = async (phoneNumber: string) => {
+  const user = await prisma.user.findUnique({
+    where: { phoneNumber },
+  });
+
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, "This user is not found!");
+  }
+
+  const otp = generateOtp(4); // number
+  const expirationOtp = new Date(Date.now() + 15 * 60 * 1000);
+
+  try {
+    // WhatsApp OTP পাঠানো
+    await sendMessage( user.phoneNumber,otp.toString());
+    console.log("✅ OTP resent via WhatsApp");
+  } catch (error) {
+    console.error("❌ Failed to send OTP:", error);
+  }
+
+  // Update user OTP
+  await prisma.user.update({
+    where: { id: user.id },
+    data: {
+      otp,
+      otpExpiresAt: expirationOtp,
+    },
+  });
+
+  return { message: "OTP resent successfully", otp: otp.toString() };
+}; */
 
 
 const verifyLogin = async (phoneNumber: string, otp: number, fcmToken?: string) => {

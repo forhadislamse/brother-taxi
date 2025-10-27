@@ -17,158 +17,6 @@ import dayjs from "dayjs";
 
 
 
-// const createUserIntoDb = async (payload: User) => {
-//   // check existing user
-//   const existingUser = await prisma.user.findFirst({
-//     where: { phoneNumber: payload.phoneNumber },
-//   });
-
-//   if (existingUser) {
-//     if (existingUser.isPhoneNumberVerify === false) {
-//       // পুরানো unverified user মুছে ফেলবো
-//       await prisma.user.delete({
-//         where: { id: existingUser.id },
-//       });
-//     } else {
-//       throw new ApiError(
-//         httpStatus.BAD_REQUEST,
-//         `User with this phone number ${payload.phoneNumber} already exists`
-//       );
-//     }
-//   }
-
-//   // otp generate
-//   const otp = generateOtp(4);
-//   const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
-
-//   // dynamic data prepare
-//   const data: any = {
-//     phoneNumber: payload.phoneNumber,
-//     role: payload.role,
-//     otp,
-//     otpExpiresAt: otpExpiry,
-//   };
-
-//   // optional email
-//   if (payload.email && payload.email.trim() !== "") {
-//     data.email = payload.email;
-//   }
-
-//   // optional password
-//   if (payload.password && payload.password.trim() !== "") {
-//     const hashedPassword = await bcrypt.hash(
-//       payload.password,
-//       Number(config.bcrypt_salt_rounds)
-//     );
-//     data.password = hashedPassword;
-//   }
-
-//   // user create
-//   const newUser = await prisma.user.create({
-//     data,
-//     select: {
-//       id: true,
-//       phoneNumber: true,
-//       role: true,
-//       email: true,
-//       otp: true,
-//       createdAt: true,
-//       updatedAt: true,
-//     },
-//   });
-
-//   console.log("✅ User created with phone:", payload.phoneNumber);
-
-//   // otp send
-//   try {
-//     const messageBody = `Here is your OTP code: ${otp}. It will expire in 5 minutes.`;
-//     await sendMessage(messageBody, payload.phoneNumber);
-//   } catch (error) {
-//     console.error("❌ Failed to send OTP:", error);
-//   }
-
-//   return newUser;
-// };
-
-
-
-// // get user profile
-
-
-// const createUserIntoDb = async (payload: User) => {
-//   // check existing user
-//   let existingUser = await prisma.user.findFirst({
-//     where: { phoneNumber: payload.phoneNumber },
-//   });
-
-//   // otp generate
-//   const otp = generateOtp(4);
-//   const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
-
-//   let user;
-
-//   if (existingUser) {
-//     if (existingUser.isPhoneNumberVerify === false) {
-      
-//       // পুরানো unverified user এর OTP update হবে
-//       user = await prisma.user.update({
-//         where: { id: existingUser.id },
-//         data: {
-//           otp,
-//           otpExpiresAt: otpExpiry,
-//           referralCode: generateReferralCode(),
-//         },
-//         select: {
-//           id: true,
-//           phoneNumber: true,
-//           role: true,
-//           otp: true,
-//           referralCode:true,
-//           createdAt: true,
-//           updatedAt: true,
-//         },
-//       });
-//     } else {
-//       throw new ApiError(
-//         httpStatus.BAD_REQUEST,
-//         `User with this phone number ${payload.phoneNumber} already exists`
-//       );
-//     }
-//   } else {
-//     // একদম নতুন user create
-//     user = await prisma.user.create({
-//       data: {
-//         phoneNumber: payload.phoneNumber,
-//         role: payload.role,
-//         otp,
-//         otpExpiresAt: otpExpiry,
-//       },
-//       select: {
-//         id: true,
-//         phoneNumber: true,
-//         role: true,
-//         otp: true,
-//         createdAt: true,
-//         updatedAt: true,
-//       },
-//     });
-//   }
-
-//   console.log("✅ User created/updated with phone:", payload.phoneNumber);
-
-//   // otp send
-//   try {
-//     const messageBody = `Here is your OTP code: ${otp}. It will expire in 5 minutes.`;
-//     await sendMessage(messageBody, payload.phoneNumber);
-//   } catch (error) {
-//     console.error("❌ Failed to send OTP:", error);
-//   }
-
-//   return user;
-// };
-
-
-
 const createUserIntoDb = async (payload: User) => {
   // check existing user
   const existingUser = await prisma.user.findFirst({
@@ -293,7 +141,7 @@ const createUserIntoDb = async (payload: User) => {
           payload.phoneNumber
         );
       } catch (error) {
-        console.error("❌ Failed to send OTP:", error);
+        console.error("❌ Failed to send  OTP:", error);
       }
 
       return { ...user, isExist };
@@ -335,12 +183,105 @@ const createUserIntoDb = async (payload: User) => {
       payload.phoneNumber
     );
   } catch (error) {
-    console.error("❌ Failed to send OTP:", error);
+    console.error(" Failed to send OTP:", error);
   }
 
   console.log("✅ User created with phone:", payload.phoneNumber);
   return { ...user, isExist };
 }; */
+
+
+
+//whatapp
+/* const createUserIntoDb = async (payload: User) => {
+  let user;
+  let isExist = false;
+
+  // 1️⃣ Check existing user
+  const existingUser = await prisma.user.findFirst({
+    where: { phoneNumber: payload.phoneNumber },
+  });
+
+  // 2️⃣ If exists
+  if (existingUser) {
+    if (!existingUser.isPhoneNumberVerify) {
+      // Unverified → update OTP, referralCode
+      const otp = generateOtp(4);
+      const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+      user = await prisma.user.update({
+        where: { id: existingUser.id },
+        data: {
+          otp,
+          otpExpiresAt: otpExpiry,
+          referralCode: existingUser.referralCode ?? generateReferralCode(),
+        },
+        select: {
+          id: true,
+          phoneNumber: true,
+          role: true,
+          otp: true,
+          referralCode: true,
+          createdAt: true,
+          updatedAt: true,
+        },
+      });
+
+      isExist = true;
+
+      // Send WhatsApp OTP
+      try {
+        await sendMessage(otp.toString(), payload.phoneNumber);
+        console.log("✅ WhatsApp OTP sent to existing user");
+      } catch (error) {
+        console.error("❌ Failed to send WhatsApp OTP:", error);
+      }
+
+      return { ...user, isExist };
+    } else {
+      throw new ApiError(
+        httpStatus.BAD_REQUEST,
+        `User with this phone number ${payload.phoneNumber} already exists`
+      );
+    }
+  }
+
+  // 3️⃣ New user create
+  const otp = generateOtp(4);
+  const otpExpiry = new Date(Date.now() + 5 * 60 * 1000);
+
+  user = await prisma.user.create({
+    data: {
+      phoneNumber: payload.phoneNumber,
+      role: payload.role,
+      otp,
+      otpExpiresAt: otpExpiry,
+      referralCode: generateReferralCode(),
+    },
+    select: {
+      id: true,
+      phoneNumber: true,
+      role: true,
+      otp: true,
+      referralCode: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
+
+  // Send WhatsApp OTP
+  try {
+    await sendMessage(otp.toString(), payload.phoneNumber);
+    console.log("✅ WhatsApp OTP sent to new user");
+  } catch (error) {
+    console.error("❌ Failed to send WhatsApp OTP:", error);
+  }
+
+  console.log("✅ User created with phone:", payload.phoneNumber);
+  return { ...user, isExist };
+}; */
+
+
 
 
 const getMyProfile = async (userToken: string) => {
@@ -993,7 +934,43 @@ const toggleNotificationOnOff = async (
   return userWithoutSensitive;
 };
 
+const getUserById = async (userId: string) => {
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+    select: {
+      id: true,
+      fullName: true,
+      email: true,
+      phoneNumber: true,
+      role: true,
+      profileImage: true,
+      adminApprovedStatus: true,
+      createdAt: true,
+      updatedAt: true,
+    },
+  });
 
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, "User not found");
+  }
+
+  return user;
+};
+
+const deleteAccount = async (userId: string) => {
+  // Check if the user exists
+  const user = await prisma.user.findUnique({
+    where: { id: userId },
+  });
+  if (!user) {
+    throw new ApiError(httpStatus.NOT_FOUND, 'User not found');
+  }
+  // Delete the user account
+  await prisma.user.delete({
+    where: { id: userId },
+  });
+  return { message: 'Account deleted successfully' };
+};
 
 
 export const userService = {
@@ -1008,6 +985,8 @@ export const userService = {
   toggleUserOnlineStatus,
   toggleNotificationOnOff,
   driverOnboarding,
-  getDriverOnboarding
+  getDriverOnboarding,
+  getUserById,
+  deleteAccount
   // postDemoVideo
 };

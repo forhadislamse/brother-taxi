@@ -50,6 +50,7 @@ router.post(
   userController.createUser
 );
 
+
 router.get(
   "/get-me",
   auth(),
@@ -117,6 +118,16 @@ router.patch(
   userController.toggleNotificationOnOff
 );
 
+
+router.get("/get/:userId",
+  auth(),
+  userController.getUserId
+);
+
+router.delete("/delete-account/:userId",
+  auth(),
+  userController.deleteAccount
+);
 // router.post("/demo-class", auth(), fileUploader.uploadFile, userController.postDemoVideo )
 
 
