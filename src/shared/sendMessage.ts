@@ -45,25 +45,25 @@ export const sendMessage = async (body: string, to: string) => {
 import twilio from "twilio";
 import config from "../config";
 
-const client = twilio(config.twilio.accountSid, config.twilio.authToken);
+// const client = twilio(config.twilio.accountSid, config.twilio.authToken);
 
-export const sendMessage = async (otp: string, to: string): Promise<void> => {
-  console.log("msg body", otp, to);
-  try {
-    const message = await client.messages.create({
-      from: "whatsapp:+15633636856", // তোমার Twilio WhatsApp number
-      to: `whatsapp:${to}`, // যেমন: whatsapp:+8801676797094
-      contentSid: "HXc14b0f9ee2e3e80647ae03da52abb81", // তোমার template SID
-      contentVariables: JSON.stringify({
-        "1": otp, // Template variable অনুযায়ী index পরিবর্তন করো
-      }),
-    });
+// export const sendMessage = async (otp: string, to: string): Promise<void> => {
+//   console.log("msg body", otp, to);
+//   try {
+//     const message = await client.messages.create({
+//       from: "whatsapp:+15633636856", // তোমার Twilio WhatsApp number
+//       to: `whatsapp:${to}`, // যেমন: whatsapp:+8801676797094
+//       contentSid: "HXc14b0f9ee2e3e80647ae03da52abb81", // তোমার template SID
+//       contentVariables: JSON.stringify({
+//         "1": otp, // Template variable অনুযায়ী index পরিবর্তন করো
+//       }),
+//     });
 
-    console.log(" WhatsApp OTP sent:", message.sid);
-  } catch (err: any) {
-    console.error(" Failed to send WhatsApp OTP:", err.message);
-  }
-};
+//     console.log(" WhatsApp OTP sent:", message.sid);
+//   } catch (err: any) {
+//     console.error(" Failed to send WhatsApp OTP:", err.message);
+//   }
+// };
 
 // import twilio from "twilio";
 // import config from "../config";
@@ -100,11 +100,12 @@ export const sendMessage = async (otp: string, to: string): Promise<void> => {
 
 
 
-/* const accountSid = "ACa3f63b052ab7dc1507974dfee7baa4db";
+ const accountSid = "ACa3f63b052ab7dc1507974dfee7baa4db";
 const authToken = "de9035a2799fb1e761159db2bf29fa18";
 const client = require("twilio")(accountSid, authToken);
 
 const MESSAGING_SERVICE_SID = "MG172dea6f0c8c1f53d8aca67b04f144ce";
+const Template_Content_SID = "HXc14b0f9ee2e3e80647ae03da52abb81";
 
 export const sendMessage = async (phoneNumber: string, otp: string) => {
   const whatsappTo = `whatsapp:${phoneNumber}`;
@@ -114,17 +115,17 @@ export const sendMessage = async (phoneNumber: string, otp: string) => {
 
   try {
     // Send WhatsApp
-    // const whatsappMessage = await client.messages.create({
-    //   messagingServiceSid: MESSAGING_SERVICE_SID,
-    //   to: whatsappTo,
-    //   body: otpBody,
-    // });
     const whatsappMessage = await client.messages.create({
-  to: `whatsapp:${phoneNumber}`,
-  messagingServiceSid: MESSAGING_SERVICE_SID,
-  contentSid: TEMPLATE_CONTENT_SID,               // approved template
-  contentVariables: JSON.stringify({ "1": otp }), // template placeholders
-});
+      messagingServiceSid: MESSAGING_SERVICE_SID,
+      to: whatsappTo,
+      body: otpBody,
+    });
+  //   const whatsappMessage = await client.messages.create({
+  // to: `whatsapp:${phoneNumber}`,
+  // messagingServiceSid: MESSAGING_SERVICE_SID,
+  // contentSid: Template_Content_SID,               // approved template
+  // contentVariables: JSON.stringify({ "1": otp }), // template placeholders
+// });
     console.log("✅ WhatsApp OTP sent successfully. SID:", whatsappMessage.sid);
   } catch (error: any) {
     console.error("❌ WhatsApp send failed:", error.message);
@@ -142,5 +143,5 @@ export const sendMessage = async (phoneNumber: string, otp: string) => {
   //   console.error("❌ SMS send failed:", error.message);
   // }
 };
- */
+ 
 
