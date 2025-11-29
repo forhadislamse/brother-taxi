@@ -25,7 +25,6 @@ https://documenter.getpostman.com/view/34968572/2sB3HnJemK
 - [Technology Used](#technology-used)
 - [Folder Structure](#folder-structure)
 - [API Endpoints](#api-endpoints)
-- [Error Handling](#error-handling)
 - [Licenses](#licenses)
 
 
@@ -168,7 +167,7 @@ This command compiles the TypeScript files into JavaScript files:
 - **Payment Integration:** Local payment gateways and Stripe support.
 - **Chat System:** Real-time chat between riders and drivers via WebSocket.
 
-## Technologies Used
+## Technology Used
 
 - **[Express](https://expressjs.com/)** – Fast, unopinionated, minimalist web framework for Node.js.
 - **[TypeScript](https://www.typescriptlang.org/)** – Strongly typed programming language built on JavaScript.
