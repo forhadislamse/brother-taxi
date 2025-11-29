@@ -7,7 +7,7 @@ Technologies Used: **Node.js, Express.js, TypeScript, Prisma,  MongoDB, JWT, Vps
 
 **Base URL**
 
-- Local: `http://localhost:5006/api/v1`
+- Local: `http://localhost:5006/`
 - Live: `https://brother-taxi.vercel.app/`
 - Postman Documentation: `https://documenter.getpostman.com/view/34968572/2sB3HnJemK`
 
