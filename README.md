@@ -38,6 +38,7 @@ Before starting the project, ensure that the following dependencies are installe
 - **Environment variables setup**
 
 
+## Installation
 **1. Clone the repository:**
 
 ```
@@ -177,6 +178,8 @@ This command compiles the TypeScript files into JavaScript files:
 - **[WebSocket](https://developer.mozilla.org/en-US/docs/Web/API/WebSockets_API)** – Real-time, full-duplex communication between server and clients.
 - **[Firebase](https://firebase.google.com/)** – Push notifications and backend services.
 
+
+## Folder Structure
 
 ```
 app.js
@@ -327,36 +330,8 @@ server.js
 
 ```
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-## USER & AUTH Endpoints
+## API Endpoints
+### USER & AUTH Endpoints
 
 | Name | Method | URL | Description |
 |------|--------|-----|-------------|
@@ -382,7 +357,7 @@ server.js
 | Set User Online | PATCH | `/users/toggle-online-status` | Toggle online status |
 | Notification Toggle | PATCH | `/users/toggle-notification-status` | Toggle notification on/off |
 
-## VEHICLE Endpoints
+### VEHICLE Endpoints
 
 | Name | Method | URL | Description |
 |------|--------|-----|-------------|
@@ -392,7 +367,7 @@ server.js
 | Get Vehicle By ID | GET | `/vehicle/single/:vehicleId` | Retrieve a single vehicle by its ID (Driver only). |
 | Update Vehicle | PUT | `/vehicle/update/:vehicleId` | Update a vehicle (Driver only). Use form-data with `data` JSON, `image` file, and `vehicleId`. |
 
-## PAYMENTS Endpoints
+### PAYMENTS Endpoints
 
 | Name | Method | URL | Description |
 |------|--------|-----|-------------|
@@ -407,7 +382,7 @@ server.js
 | Get Refunded Payments | GET | `/payments/refunded-payments` | Retrieve refunded payments for rider/driver. Include `transportId`, `paymentMethod`, optionally `cardId`. |
 | Create Stripe Account | POST | `/payments/create-stripe-account` | Driver can create a Stripe account for payment processing. |
 
-## FARE MANAGEMENT Endpoints
+### FARE MANAGEMENT Endpoints
 
 | Name | Method | URL | Description |
 |------|--------|-----|-------------|
@@ -417,13 +392,13 @@ server.js
 | Create Current Fare | POST | `/fares/` | Create a new fare rate. Include `costPerKm`, `costPerMin`, and `minimumFare` in body. Admin only. |
 | Update Current Fare | PATCH | `/fares/:fareId` | Update an existing fare by ID. Include the updated fields in body (e.g., `minimumFare`). Admin only. |
 
-## CHAT IMAGE Endpoints
+### CHAT IMAGE Endpoints
 
 | Name | Method | URL | Description |
 |------|--------|-----|-------------|
 | Image Request | POST | `/chats/upload-images` | Upload images in chat. Supports multiple images. Accessible by rider or driver. |
 
-## Car Transport APIs
+### Car Transport APIs
 
 | Name | Method | URL | Description |
 |------|--------|-----|-------------|
@@ -441,7 +416,7 @@ server.js
 | Rate Ride | POST | `/car-transport/:rideId/rate` | Rider and driver can submit reviews and ratings after ride completion. |
 | Admin All Rides | GET | `/car-transport/all` | Admin can view all rides in the system. |
 
-## Notifications API Endpoints
+### Notifications API Endpoints
 
 | Name             | Method | URL                          | Description                              |
 |----------------------------|--------|-----------------------------|------------------------------------------|
@@ -452,7 +427,7 @@ server.js
 | Read Notifications         | PUT    | `/notifications/read`       | Mark notifications as read.              |
 | Delete Notification By ID  | DELETE | `/notifications/delete/:id` | Delete a notification by its ID.         |
 
-## Reviews API Endpoints
+### Reviews API Endpoints
 
 | Endpoint Name                    | Method | URL                        | Description                                               |
 |---------------------------------|--------|---------------------------|-----------------------------------------------------------|
@@ -460,14 +435,14 @@ server.js
 | Get My Reviews                   | GET    | `/reviews/my-reviews`     | Retrieve reviews submitted by the authenticated user.    |
 | Get Flagged/Bad Reviews (Admin) | GET    | `/reviews/flagged`        | Admin-only endpoint to get all flagged or bad reviews.   |
 
-## Estimate Fare API Endpoints
+### Estimate Fare API Endpoints
 
 | Endpoint Name             | Method | URL                           | Description                                      |
 |----------------------------|--------|-------------------------------|--------------------------------------------------|
 | Create Fare Estimate       | POST   | `/estimateFares/calculate-fare` | Rider can create a fare estimate for a ride.    |
 | Get My Estimate List       | GET    | `/estimateFares/getMyEstimatelist` | Retrieve a list of fare estimates by the authenticated rider. |
 
-## Licenses:
+### Licenses:
 
 //add this section later
 
